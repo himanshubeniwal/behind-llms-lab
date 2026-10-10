@@ -421,7 +421,7 @@ def layout(meta, body, ctx, slug, toc=()):
     if meta.get("widgets"):
         scripts += f'<script src="{root}assets/widgets.js?v={ctx["v"]}" defer></script>'
     return f"""<!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -430,10 +430,10 @@ def layout(meta, body, ctx, slug, toc=()):
 <meta property="og:title" content="{esc(full_title)}">
 <meta property="og:description" content="{esc(desc)}">
 <meta property="og:type" content="website">
-<meta name="color-scheme" content="dark light">
+<meta name="color-scheme" content="light dark">
 <link rel="icon" href="{root}assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="{root}assets/site.css?v={ctx["v"]}">
-<script>(function(){{try{{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t}}catch(e){{}}}})()</script>
+<script>(function(){{try{{if(localStorage.getItem("theme")==="dark")document.documentElement.dataset.theme="dark"}}catch(e){{}}}})()</script>
 </head>
 <body class="page-{slug.replace("/", "-")}">
 <a class="skip" href="#main">Skip to the content</a>
@@ -444,7 +444,7 @@ def layout(meta, body, ctx, slug, toc=()):
     <nav id="nav" class="nav" aria-label="Main">{nav}</nav>
     <div class="top-tools">
       <a class="icon-btn" href="{REPO_URL}" aria-label="The repository on GitHub" title="GitHub repository">{ICON_GITHUB}</a>
-      <button class="icon-btn theme-toggle" type="button" aria-label="Switch between dark and light" title="Dark or light">{ICON_THEME}</button>
+      <button class="icon-btn theme-toggle" type="button" aria-label="Switch between light and dark" title="Light or dark">{ICON_THEME}</button>
     </div>
   </div>
 </header>
