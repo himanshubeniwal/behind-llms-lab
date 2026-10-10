@@ -120,8 +120,8 @@ cat logs/hello-hpc-*.out                    # when the job is gone from the queu
 
 <h2>Where to run the notebooks</h2>
 <div class="grid three">
-  <div class="card c-amber"><p class="eyebrow">the easy way</p><h3>Google Colab</h3><p>Nothing to install. Use the buttons on the <a href="notebooks.html">Notebooks</a> page. For notebooks 5 and 6, choose a T4 GPU under Runtime &gt; Change runtime type.</p></div>
-  <div class="card c-cyan"><p class="eyebrow">on the cluster</p><h3>JupyterHub</h3><p>Open <a href="https://jupyterhub.hpc.tu-dresden.de">jupyterhub.hpc.tu-dresden.de</a> from the university network, start a server, and pick the kernel <em>LLM Lab (venv-llm)</em>. The setup script installed it for you.</p></div>
+  <div class="card c-blue"><p class="eyebrow">the easy way</p><h3>Google Colab</h3><p>Nothing to install. Use the buttons on the <a href="notebooks.html">Notebooks</a> page. For notebooks 5 and 6, choose a T4 GPU under Runtime &gt; Change runtime type.</p></div>
+  <div class="card c-sky"><p class="eyebrow">on the cluster</p><h3>JupyterHub</h3><p>Open <a href="https://jupyterhub.hpc.tu-dresden.de">jupyterhub.hpc.tu-dresden.de</a> from the university network, start a server, and pick the kernel <em>LLM Lab (venv-llm)</em>. The setup script installed it for you.</p></div>
   <div class="card c-violet"><p class="eyebrow">offline</p><h3>Your laptop</h3><p>Clone the repository, then <code>pip install torch transformers matplotlib jupyter</code> in a virtual environment. The notebooks pick small settings when there is no GPU.</p></div>
 </div>
 

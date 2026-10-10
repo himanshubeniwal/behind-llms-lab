@@ -60,15 +60,15 @@
     plot.appendChild(svg("line", { x1: 0, x2: W, y1: py(0), y2: py(0), stroke: "var(--line-strong)" }));
     plot.appendChild(svg("line", { x1: px(0), x2: px(0), y1: 0, y2: H, stroke: "var(--line-strong)" }));
     var resid = pts.map(function () { var l = svg("line", { stroke: "var(--red)", "stroke-width": 1.2, opacity: 0.55 }); plot.appendChild(l); return l; });
-    var line = svg("line", { stroke: "var(--amber-fill)", "stroke-width": 3, "stroke-linecap": "round" });
+    var line = svg("line", { stroke: "var(--text)", "stroke-width": 3, "stroke-linecap": "round" });
     plot.appendChild(line);
-    pts.forEach(function (p) { plot.appendChild(svg("circle", { cx: px(p[0]), cy: py(p[1]), r: 4.5, fill: "var(--cyan)" })); });
+    pts.forEach(function (p) { plot.appendChild(svg("circle", { cx: px(p[0]), cy: py(p[1]), r: 4.5, fill: "var(--accent-fill)" })); });
     var tx = svg("text", { x: W - 8, y: py(0) - 6, "text-anchor": "end" }); tx.textContent = "x"; plot.appendChild(tx);
     var ty = svg("text", { x: px(0) + 7, y: 14 }); ty.textContent = "y"; plot.appendChild(ty);
 
     var LH = 96;
     var lossPlot = svg("svg", { viewBox: "0 0 " + W + " " + LH, class: "w-plot", role: "img", "aria-label": "The loss after every step" });
-    var curve = svg("polyline", { fill: "none", stroke: "var(--amber-fill)", "stroke-width": 2 });
+    var curve = svg("polyline", { fill: "none", stroke: "var(--accent-fill)", "stroke-width": 2 });
     lossPlot.appendChild(curve);
     var lt = svg("text", { x: 8, y: 14 }); lt.textContent = "loss per step"; lossPlot.appendChild(lt);
 
@@ -176,7 +176,7 @@
       out.textContent = "";
       t.forEach(function (id) {
         var sh = show(id);
-        out.appendChild(el("span", { class: "tok" + (sh.raw ? " raw" : ""), style: "--h:" + (id * 47) % 360, text: sh.text }));
+        out.appendChild(el("span", { class: "tok" + (sh.raw ? " raw" : ""), style: "--h:" + (190 + (id * 47) % 90), text: sh.text }));
       });
       var chars = Array.from(text).length, words = text.trim() ? text.trim().split(/\s+/).length : 0;
       read.textContent = "";

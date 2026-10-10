@@ -36,7 +36,7 @@ description: An introduction to the ZIH high performance computing clusters at T
 <p>ZIH runs five systems. Two are GPU clusters and those are the ones this lab uses. The numbers come from the <a href="https://compendium.hpc.tu-dresden.de/jobs_and_resources/hardware_overview/">hardware overview in the ZIH HPC Compendium</a> (checked in October 2026). Hardware changes, so look there for the current state.</p>
 
 <div class="clusters">
-  <article class="cluster used c-amber">
+  <article class="cluster used c-blue">
     <header><h3>Alpha Centauri</h3><span class="tag gpu">GPU</span><span class="tag ok">used in this lab</span></header>
     <p class="what">Built for AI and machine learning. Since 2021. We call it Alpha.</p>
     <div class="node" aria-hidden="true"><x-repeat n="8"/><small>8 GPUs in one node</small></div>
@@ -49,7 +49,7 @@ description: An introduction to the ZIH high performance computing clusters at T
     <p class="host">login1.alpha.hpc.tu-dresden.de<br>login2.alpha.hpc.tu-dresden.de</p>
   </article>
 
-  <article class="cluster used c-amber">
+  <article class="cluster used c-blue">
     <header><h3>Capella</h3><span class="tag gpu">GPU</span><span class="tag ok">used in this lab</span></header>
     <p class="what">The newer GPU cluster, also built for AI and machine learning. Since 2024.</p>
     <div class="node" aria-hidden="true"><x-repeat n="4"/><small>4 GPUs in one node</small></div>
@@ -62,7 +62,7 @@ description: An introduction to the ZIH high performance computing clusters at T
     <p class="host">login1.capella.hpc.tu-dresden.de<br>login2.capella.hpc.tu-dresden.de</p>
   </article>
 
-  <article class="cluster used c-cyan">
+  <article class="cluster used c-sky">
     <header><h3>Barnard</h3><span class="tag cpu">CPU</span><span class="tag ok">fine for exercises 1 and 2</span></header>
     <p class="what">The big general purpose cluster. No GPUs. Since 2023.</p>
     <div class="node cpu" aria-hidden="true"><x-repeat n="13"/><small>104 cores in one node (1 mark = 8 cores)</small></div>
@@ -139,8 +139,8 @@ ws_allocate -F horse llm-lab 30        # prints /data/horse/ws/<zih-login>-llm-l
 
 <h2>Three ways to work</h2>
 <div class="grid three">
-  <div class="card c-amber"><p class="eyebrow">the normal way</p><h3>A batch job</h3><p>You write a job script and send it with <code>sbatch</code>. It runs when there is room, with or without you. The output goes to a log file. All exercises work like this.</p></div>
-  <div class="card c-cyan"><p class="eyebrow">for trying things</p><h3>An interactive job</h3><p><code>srun --pty bash -l</code> gives you a terminal on a compute node. Good for installing, testing and debugging. The setup step uses it. Type <code>exit</code> to give the machine back.</p></div>
+  <div class="card c-blue"><p class="eyebrow">the normal way</p><h3>A batch job</h3><p>You write a job script and send it with <code>sbatch</code>. It runs when there is room, with or without you. The output goes to a log file. All exercises work like this.</p></div>
+  <div class="card c-sky"><p class="eyebrow">for trying things</p><h3>An interactive job</h3><p><code>srun --pty bash -l</code> gives you a terminal on a compute node. Good for installing, testing and debugging. The setup step uses it. Type <code>exit</code> to give the machine back.</p></div>
   <div class="card c-violet"><p class="eyebrow">for notebooks</p><h3>JupyterHub</h3><p>At <a href="https://jupyterhub.hpc.tu-dresden.de">jupyterhub.hpc.tu-dresden.de</a> you start a notebook server on the cluster from the browser. The setup script adds a kernel called <em>LLM Lab (venv-llm)</em> for it.</p></div>
 </div>
 
