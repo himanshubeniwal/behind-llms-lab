@@ -1,0 +1,149 @@
+<!--
+title: Crash course: from a line to a language model
+eyebrow: Step 4 · the ideas
+lead: A large language model is built from a small number of ideas, and each of them is simple on its own. This page walks through all of them in order, with something to play with at every step. The notebooks then make you build each one.
+description: A crash course from standard machine learning to large language models: gradient descent, neural networks, cross-entropy, tokens, attention, the Transformer, training and decoding, with interactive demos.
+widgets: yes
+-->
+<h2>Machine learning in one picture</h2>
+<p class="lede">Classical programming means writing down the rules. Machine learning means showing examples and letting the computer find the rules. It always needs the same four things.</p>
+<ol class="pipeline">
+  <li data-n="1"><b>Data</b><span>Examples of inputs and the right outputs. House sizes and prices, images and digits, text and the word that came next.</span></li>
+  <li data-n="2"><b>A model</b><span>A function with adjustable numbers in it, the parameters. Different parameters give different predictions.</span></li>
+  <li data-n="3"><b>A loss</b><span>One number that says how wrong the predictions are on the data. Smaller is better.</span></li>
+  <li data-n="4"><b>An optimiser</b><span>A procedure that changes the parameters a little, again and again, so that the loss goes down.</span></li>
+</ol>
+<p>The smallest example is a straight line. The model has two parameters, a slope <x-math>w</x-math> and an intercept <x-math>b</x-math>:</p>
+<x-math block>\hat{y} = w x + b</x-math>
+<p>The loss is the mean squared error, the average of the squared distances between the prediction and the truth:</p>
+<x-math block>\mathcal{L}(w, b) = \frac{1}{n}\sum_{i=1}^{n} (\hat{y}_i - y_i)^2</x-math>
+<p>And the optimiser is <strong>gradient descent</strong>. The gradient tells us, for each parameter, in which direction the loss goes up. We take a small step the other way. The size of the step is the learning rate <x-math>\eta</x-math>:</p>
+<x-math block>w \leftarrow w - \eta \, \frac{\partial \mathcal{L}}{\partial w}, \qquad b \leftarrow b - \eta \, \frac{\partial \mathcal{L}}{\partial b}</x-math>
+
+<div class="widget" data-widget="gd"><div class="widget-body"><p>This demo needs JavaScript.</p></div></div>
+
+<div class="callout note"><p><strong>Keep this loop in mind.</strong> Predict, measure the loss, compute the gradient, take a step. A language model with billions of parameters is trained with exactly this loop. Only the model in the middle is bigger.</p></div>
+
+<h2>From a line to a neural network</h2>
+<p>Real data is rarely a straight line. A neural network is a model that can bend. Its building block is the <strong>neuron</strong>: multiply the inputs by weights, add them up, and pass the sum through a simple non-linear function <x-math>\sigma</x-math>, for example one that sets negative values to zero.</p>
+<x-math block>a = \sigma(w_1 x_1 + w_2 x_2 + \dots + w_n x_n + b)</x-math>
+<p>Many neurons side by side make a layer. Layers stacked on top of each other make a network. Without the non-linear function, a stack of layers would still be one straight line. With it, a big enough network can approximate almost any function. That is why the same idea works for images, sound and text.</p>
+<p>The gradient of the loss for every single weight is computed by the <strong>backward pass</strong> (backpropagation). You never do this by hand. PyTorch records the computation and does it for you. So the training loop of any model, from the line above to a GPT, is five lines:</p>
+<x-code lang="python" title="the training loop, the same in every notebook and in train_tinygpt.py">
+for step in range(steps):
+    x, y = get_batch()              # 1. a batch of examples
+    logits, loss = model(x, y)      # 2. forward pass: predict and measure the loss
+    optimizer.zero_grad()           # 3. forget the gradients of the last step
+    loss.backward()                 # 4. backward pass: one gradient per parameter
+    optimizer.step()                # 5. move every parameter a little
+</x-code>
+
+<h2>Predicting a class instead of a number</h2>
+<p>A house price is a number. A handwritten digit is one of ten classes. For classes, the network outputs one raw score per class, called a <strong>logit</strong>. The <strong>softmax</strong> turns the scores into probabilities that are positive and add up to 1:</p>
+<x-math block>p_k = \frac{e^{z_k}}{\sum_{j} e^{z_j}}</x-math>
+<p>The loss for classification is the <strong>cross-entropy</strong>: the negative logarithm of the probability that the model gave to the right class <x-math>y</x-math>. If the model was sure and right, the loss is near 0. If it was sure and wrong, the loss is large.</p>
+<x-math block>\mathcal{L} = -\log p_y</x-math>
+<p>This is the last piece of standard machine learning we need. Everything from here on is the same recipe, applied to text.</p>
+
+<h2>A language model is a next-token classifier</h2>
+<p class="lede">The task every LLM solves is: given the text so far, guess what comes next.</p>
+<p>The classes are all the pieces of text the model knows, its vocabulary. The model outputs one logit for each of them, the softmax makes a probability distribution, and the cross-entropy compares it with the piece that really came next. A sentence of ten tokens is ten classification problems.</p>
+<p>The chain rule of probability says that this is enough to model whole texts. The probability of a text is the product of the probabilities of each token, given everything before it:</p>
+<x-math block>P(x_1, \dots, x_n) = \prod_{t=1}^{n} P(x_t \mid x_1, \dots, x_{t-1})</x-math>
+<p>Nobody has to label any data for this. The text itself is the label: take any text, hide the next token, and ask the model. That is why language models can learn from enormous amounts of text.</p>
+
+<h2>Tokens: turning text into numbers</h2>
+<p>A network only works with numbers, so the text has to be cut into pieces with integer IDs. There are three ways to cut.</p>
+<div class="table-wrap"><table>
+  <thead><tr><th>Tokens are</th><th>Vocabulary</th><th>Sequences</th><th>The problem</th></tr></thead>
+  <tbody>
+    <tr><td>characters</td><td>tiny, about 65</td><td>very long</td><td>The model has to learn spelling, and the context fills up fast.</td></tr>
+    <tr><td>words</td><td>huge, 100,000 and more</td><td>short</td><td>Unknown words, and <em>run</em>, <em>runs</em>, <em>running</em> get unrelated IDs.</td></tr>
+    <tr><td>subwords (BPE)</td><td>you choose, for example 50,000</td><td>medium</td><td>This is what GPT, Llama and Qwen use.</td></tr>
+  </tbody>
+</table></div>
+<p><strong>Byte-pair encoding</strong> (BPE) starts from single bytes and keeps merging the most frequent pair of neighbours into a new token. Frequent words become one token, rare words are spelled out in pieces, and nothing is ever unknown.</p>
+
+<div class="widget" data-widget="bpe"><div class="widget-body"><p>This demo needs JavaScript.</p></div></div>
+
+<p>A tokenizer is learned from text too, so it is good at the languages it saw most. That is a fairness question: you pay per token, in computing time, in money and in space in the context window. <a href="notebooks/6-pretrained-llms-for-text-analysis.html">Notebook 6</a> measures this for six languages and three real tokenizers.</p>
+
+<h2>The simplest language model only counts</h2>
+<p>Before any neural network, try the laziest idea: look only at the previous character and count what usually follows it. After <em>q</em> comes <em>u</em>. After <em>t</em> often comes <em>h</em>. This is the <strong>bigram model</strong> of <a href="notebooks/4-tokens-and-bigram-lm.html">notebook 4</a>. Its text looks a bit like English letter by letter, but not word by word.</p>
+<p>To compare language models we need a number. We use the cross-entropy on text the model has not seen, or its exponential, the <strong>perplexity</strong>:</p>
+<x-math block>\text{PPL} = e^{\mathcal{L}}</x-math>
+<p>You can read it as: the model is as unsure as if it had to pick uniformly from PPL options. A model that knows nothing about 65 characters has perplexity 65 and loss <x-math>\log 65 \approx 4.17</x-math>. The bigram model reaches a loss of about 2.5. Its problem is the context of one character. It cannot know which word it is in.</p>
+
+<h2>Attention: letting tokens look back</h2>
+<p>The fix is to let every position look at all the positions before it and collect what it needs. Not the positions after it, because those are what it has to predict. This rule is the <strong>causal mask</strong>.</p>
+
+<div class="widget" data-widget="mask"><div class="widget-body"><p>This demo needs JavaScript.</p></div></div>
+
+<p>Plain averaging treats every earlier token as equally important. <strong>Self-attention</strong> lets the weights depend on the content. Every token makes three vectors from its own embedding:</p>
+<ul>
+  <li>a <strong>query</strong>: what am I looking for?</li>
+  <li>a <strong>key</strong>: what do I have to offer?</li>
+  <li>a <strong>value</strong>: what do I pass on if someone looks at me?</li>
+</ul>
+<p>The score between two tokens is the dot product of one's query with the other's key. It is large when what one is looking for matches what the other has. A softmax over the scores gives the weights, and the output is the weighted average of the values. In one line, with the mask <x-math>M</x-math>:</p>
+<x-math block>\text{Attention}(Q,K,V) = \text{softmax}\left(\frac{QK^\top}{\sqrt{d_k}} + M\right)V</x-math>
+<p>Nobody tells the model what to look for. The three small matrices that make queries, keys and values are parameters, and they are learned with the same loop as everything else.</p>
+
+<h2>The Transformer, and what GPT means</h2>
+<p>One attention step is not enough, so the model does it several times, with a small ordinary network in between. One round of “talk to each other, then think alone” is a <strong>Transformer block</strong>. A GPT is a stack of them.</p>
+<ol class="pipeline">
+  <li data-n="1"><b>Token embedding</b><span>Every token ID picks a row from a table of learned vectors. Which token is it?</span></li>
+  <li data-n="2"><b>Position embedding</b><span>A second learned vector is added for the position. Attention alone does not know the order of the tokens.</span></li>
+  <li data-n="3"><b>N Transformer blocks</b><span>Each block is multi-head self-attention followed by a small MLP, with residual connections and layer normalisation so that a deep stack can still be trained.</span></li>
+  <li data-n="4"><b>Logits</b><span>A last linear layer gives one score for every token in the vocabulary, at every position.</span></li>
+  <li data-n="5"><b>Softmax and loss</b><span>Probabilities for the next token, compared with the real next token by the cross-entropy.</span></li>
+</ol>
+<x-math block>x \leftarrow x + \text{Attention}(\text{LN}(x)), \qquad x \leftarrow x + \text{MLP}(\text{LN}(x))</x-math>
+<p><strong>Multi-head</strong> means several attention steps run side by side, each with its own queries, keys and values, so each can look for something different. GPT stands for <em>generative pretrained Transformer</em>: it generates text, it was trained on a lot of text beforehand, and it is built from these blocks.</p>
+<p>In <a href="notebooks/5-attention-and-tinygpt.html">notebook 5</a> you write all of this in about 80 lines of PyTorch. The file <a href="lab.html#ex4"><code>train_tinygpt.py</code></a> is the same model as a batch job.</p>
+
+<h2>Same recipe, more of everything</h2>
+<p>The step from the model you train to the models in the news is not a new idea. It is more layers, wider layers, more text and more GPUs.</p>
+<div class="table-wrap"><table>
+  <thead><tr><th>Model</th><th class="num">Parameters</th><th>Tokens</th><th>Where you meet it</th></tr></thead>
+  <tbody>
+    <tr><td>Bigram model</td><td class="num">65 × 65 = 4,225</td><td>characters</td><td><a href="notebooks/4-tokens-and-bigram-lm.html">Notebook 4</a></td></tr>
+    <tr><td>TinyGPT</td><td class="num">about 0.8 million</td><td>characters</td><td><a href="notebooks/5-attention-and-tinygpt.html">Notebook 5</a>, <a href="lab.html#ex4">exercise 4</a></td></tr>
+    <tr><td>GPT-2</td><td class="num">124 million</td><td>50,257 subwords</td><td><a href="notebooks/6-pretrained-llms-for-text-analysis.html">Notebook 6</a></td></tr>
+    <tr><td>Qwen2.5-0.5B-Instruct</td><td class="num">0.5 billion</td><td>subwords, many languages</td><td><a href="lab.html#ex6">Exercise 6</a>, notebook 6</td></tr>
+    <tr><td>Today's large models</td><td class="num">billions to hundreds of billions</td><td>subwords</td><td>The reason clusters like Alpha and Capella exist.</td></tr>
+  </tbody>
+</table></div>
+
+<h2>Generating text</h2>
+<p>A trained model gives a probability for every possible next token. To write text we pick one, add it to the input, and ask again. How we pick is our decision, not the model's, and it changes the text a lot.</p>
+<ul>
+  <li><strong>Greedy:</strong> always take the most likely token. Always the same answer, and often repetitive.</li>
+  <li><strong>Temperature</strong> <x-math>T</x-math>: divide the logits by <x-math>T</x-math> before the softmax. A small <x-math>T</x-math> makes the model careful, a large one makes it adventurous and more often wrong.</li>
+  <li><strong>Top-k:</strong> keep only the <x-math>k</x-math> most likely tokens.</li>
+  <li><strong>Top-p:</strong> keep the smallest set of tokens whose probabilities add up to <x-math>p</x-math>.</li>
+</ul>
+<x-math block>p_k = \frac{e^{z_k / T}}{\sum_j e^{z_j / T}}</x-math>
+
+<div class="widget" data-widget="sampler"><div class="widget-body"><p>This demo needs JavaScript.</p></div></div>
+
+<h2>From a text predictor to a chatbot</h2>
+<p>A model trained only to continue text is called a <strong>base model</strong>. Ask it a question and it may continue with another question, because that is a likely continuation. GPT-2 is a base model.</p>
+<p>A chat model is a base model that was trained further on conversations. This is called <strong>instruction tuning</strong>. It expects its input in a fixed format, the <strong>chat template</strong>, where special tokens mark who is speaking. From the model's side a chat is still one long text, and answering is still predicting the next token, again and again, until it predicts the token that means “my turn is over”.</p>
+<p>You see the raw template in section 9 of <a href="notebooks/6-pretrained-llms-for-text-analysis.html">notebook 6</a>, and <code>generate.py</code> in <a href="lab.html#ex6">exercise 6</a> applies it to every prompt.</p>
+
+<h2>Where each idea lives in the material</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Idea</th><th>Notebook</th><th>On the cluster</th></tr></thead>
+  <tbody>
+    <tr><td>Regression, gradient descent, neurons, autograd</td><td>warm-up notebooks 0 to 3b of the first crash course</td><td></td></tr>
+    <tr><td>Tokens and BPE</td><td><a href="notebooks/4-tokens-and-bigram-lm.html">4</a>, section 2; <a href="notebooks/6-pretrained-llms-for-text-analysis.html">6</a>, sections 1 and 2</td><td></td></tr>
+    <tr><td>Bigram model, cross-entropy, perplexity</td><td><a href="notebooks/4-tokens-and-bigram-lm.html">4</a>, sections 3 to 5</td><td></td></tr>
+    <tr><td>Self-attention and the causal mask</td><td><a href="notebooks/5-attention-and-tinygpt.html">5</a>, sections 2 and 3</td><td></td></tr>
+    <tr><td>Transformer block, training a GPT</td><td><a href="notebooks/5-attention-and-tinygpt.html">5</a>, sections 4 and 5</td><td><a href="lab.html#ex4">Exercise 4</a>, <a href="lab.html#ex5">exercise 5</a></td></tr>
+    <tr><td>Why GPUs</td><td></td><td><a href="lab.html#ex3">Exercise 3</a></td></tr>
+    <tr><td>Temperature, top-k, top-p</td><td><a href="notebooks/4-tokens-and-bigram-lm.html">4</a>, section 6; <a href="notebooks/6-pretrained-llms-for-text-analysis.html">6</a>, section 4</td><td><code>sample.py</code> in <a href="lab.html#ex4">exercise 4</a></td></tr>
+    <tr><td>Pretrained models, chat templates</td><td><a href="notebooks/6-pretrained-llms-for-text-analysis.html">6</a>, sections 3 and 9</td><td><a href="lab.html#ex6">Exercise 6</a></td></tr>
+    <tr><td>Looking inside a model</td><td><a href="notebooks/5-attention-and-tinygpt.html">5</a>, section 6; <a href="notebooks/6-pretrained-llms-for-text-analysis.html">6</a>, sections 5 to 8</td><td><a href="black-box.html">Black box</a></td></tr>
+  </tbody>
+</table></div>

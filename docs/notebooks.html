@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The notebooks · Behind the Secrets of LLMs</title>
+<meta name="description" content="The three crash course notebooks: tokens and a bigram language model, self-attention and a tiny GPT, and pretrained LLMs for text analysis. Read them online or open them in Colab.">
+<meta property="og:title" content="The notebooks · Behind the Secrets of LLMs">
+<meta property="og:description" content="The three crash course notebooks: tokens and a bigram language model, self-attention and a tiny GPT, and pretrained LLMs for text analysis. Read them online or open them in Colab.">
+<meta property="og:type" content="website">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css?v=f01bcb2a">
+<script>(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t}catch(e){}})()</script>
+</head>
+<body class="page-notebooks">
+<a class="skip" href="#main">Skip to the content</a>
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="index.html"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="5" y="12" width="22" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11 16 4l11 7" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="19.5" r="2.4" fill="var(--amber)"/></svg><span class="brand-text"><b>Behind the Secrets of LLMs</b><i>lab</i></span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav">Menu</button>
+    <nav id="nav" class="nav" aria-label="Main"><a href="index.html">Overview</a><a href="clusters.html">Clusters</a><a href="setup.html">Setup</a><a href="lab.html">HPC lab</a><a href="crash-course.html">Crash course</a><a href="notebooks.html" aria-current="page">Notebooks</a><a href="black-box.html">Black box</a><a href="cheatsheet.html">Cheat sheet</a></nav>
+    <div class="top-tools">
+      <a class="icon-btn" href="https://github.com/himanshubeniwal/behind-llms-lab" aria-label="The repository on GitHub" title="GitHub repository"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg></a>
+      <button class="icon-btn theme-toggle" type="button" aria-label="Switch between dark and light" title="Dark or light"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 0 18V3Z"/><circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+    </div>
+  </div>
+</header>
+<main id="main">
+<header class="page-hero"><div class="wrap"><p class="eyebrow">Step 5 · build it yourself</p><h1>The notebooks</h1><p class="lead">Three notebooks that build a language model from scratch and then look inside real ones. Read them here with all outputs, or open them in Google Colab and run every cell yourself. They need no big GPU.</p></div></header><div class="wrap layout"><article class="prose">
+<div class="nb-cards"><article class="nb-card"><div class="nb-card-num">4</div><div class="nb-card-body"><h3 id="nb-4-tokens-and-bigram-lm"><a href="notebooks/4-tokens-and-bigram-lm.html">Tokens and a Bigram Language Model</a></h3><p>Tokenization, a small BPE, a counting language model, cross-entropy and perplexity.</p><div class="meta-row"><span>about 45 minutes</span><span>CPU</span><span>12 code cells</span><span>5 exercises</span></div><ul class="chip-list"><li>Text is just a long list of characters</li><li>Tokenization: from text to integers</li><li>A language model gives text a probability</li><li>How good is a language model?</li><li>The same model, learned with gradient descent</li><li>Controlling the output with the temperature</li><li>What is still missing?</li></ul><div class="btn-row"><a class="btn btn-primary" href="notebooks/4-tokens-and-bigram-lm.html">Read it here</a><a class="btn" href="https://colab.research.google.com/github/himanshubeniwal/behind-llms-lab/blob/main/notebooks/4%20-%20Tokens%20and%20Bigram%20LM.ipynb">Open in Colab</a><a class="btn" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/notebooks/4%20-%20Tokens%20and%20Bigram%20LM.ipynb">GitHub</a><a class="btn" href="https://raw.githubusercontent.com/himanshubeniwal/behind-llms-lab/main/notebooks/4%20-%20Tokens%20and%20Bigram%20LM.ipynb" download>.ipynb</a></div></div></article><article class="nb-card"><div class="nb-card-num">5</div><div class="nb-card-body"><h3 id="nb-5-attention-and-tinygpt"><a href="notebooks/5-attention-and-tinygpt.html">Self-Attention and a Tiny GPT</a></h3><p>Self-attention from scratch, a Transformer block, training a small GPT.</p><div class="meta-row"><span>about 60 minutes</span><span>CPU or T4</span><span>12 code cells</span><span>5 exercises</span></div><ul class="chip-list"><li>What does a language model train on?</li><li>Letting tokens talk to each other: averaging the past</li><li>Scaled dot-product self-attention</li><li>From one head to a Transformer block</li><li>Training, with the same loop as for MNIST</li><li>Looking inside: what do the heads attend to?</li></ul><div class="btn-row"><a class="btn btn-primary" href="notebooks/5-attention-and-tinygpt.html">Read it here</a><a class="btn" href="https://colab.research.google.com/github/himanshubeniwal/behind-llms-lab/blob/main/notebooks/5%20-%20Attention%20and%20TinyGPT.ipynb">Open in Colab</a><a class="btn" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/notebooks/5%20-%20Attention%20and%20TinyGPT.ipynb">GitHub</a><a class="btn" href="https://raw.githubusercontent.com/himanshubeniwal/behind-llms-lab/main/notebooks/5%20-%20Attention%20and%20TinyGPT.ipynb" download>.ipynb</a></div></div></article><article class="nb-card"><div class="nb-card-num">6</div><div class="nb-card-body"><h3 id="nb-6-pretrained-llms-for-text-analysis"><a href="notebooks/6-pretrained-llms-for-text-analysis.html">Pretrained LLMs as Tools for Text Analysis</a></h3><p>Tokenizers across languages, decoding, perplexity, zero-shot labels, embeddings.</p><div class="meta-row"><span>about 60 minutes</span><span>CPU or T4</span><span>11 code cells</span><span>5 exercises</span></div><ul class="chip-list"><li>A real tokenizer</li><li>Are tokenizers fair across languages?</li><li>Next-token prediction with a real model</li><li>Decoding strategies</li><li>Perplexity as a tool for text analysis</li><li>Where exactly is the model surprised?</li><li>Zero-shot classification by comparing likelihoods</li><li>Sentence embeddings and semantic search</li><li>(Optional) An instruction-tuned chat model</li></ul><div class="btn-row"><a class="btn btn-primary" href="notebooks/6-pretrained-llms-for-text-analysis.html">Read it here</a><a class="btn" href="https://colab.research.google.com/github/himanshubeniwal/behind-llms-lab/blob/main/notebooks/6%20-%20Pretrained%20LLMs%20for%20Text%20Analysis.ipynb">Open in Colab</a><a class="btn" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/notebooks/6%20-%20Pretrained%20LLMs%20for%20Text%20Analysis.ipynb">GitHub</a><a class="btn" href="https://raw.githubusercontent.com/himanshubeniwal/behind-llms-lab/main/notebooks/6%20-%20Pretrained%20LLMs%20for%20Text%20Analysis.ipynb" download>.ipynb</a></div></div></article></div>
+
+<h2 id="how-to-run-them">How to run them<a class="anchor" href="#how-to-run-them" aria-label="Link to this section">#</a></h2>
+<div class="grid three">
+  <div class="card c-amber"><p class="eyebrow">nothing to install</p><h3>Google Colab</h3><p>Press <strong>Open in Colab</strong> on a notebook. For notebooks 5 and 6, switch to a T4 GPU under Runtime &gt; Change runtime type. Notebook 4 is fine on a CPU. You need a Google account.</p></div>
+  <div class="card c-cyan"><p class="eyebrow">on the cluster</p><h3>JupyterHub</h3><p>After the <a href="setup.html">setup</a>, open <a href="https://jupyterhub.hpc.tu-dresden.de">jupyterhub.hpc.tu-dresden.de</a>, start a server and choose the kernel <em>LLM Lab (venv-llm)</em>. The notebooks are in <code>~/behind-llms-lab/notebooks</code>.</p></div>
+  <div class="card c-violet"><p class="eyebrow">offline</p><h3>Your laptop</h3><p>Clone the repository and install <code>torch transformers matplotlib jupyter</code>. Without a GPU the notebooks choose smaller settings by themselves.</p></div>
+</div>
+
+<h2 id="how-they-fit-together">How they fit together<a class="anchor" href="#how-they-fit-together" aria-label="Link to this section">#</a></h2>
+<p>Each notebook starts where the one before stopped, and each ends with exercises.</p>
+<ol class="pipeline">
+  <li data-n="4"><b>Tokens and a bigram language model</b><span>Text becomes numbers. A model that only counts which character follows which reaches a loss of about 2.5. You meet cross-entropy, perplexity and the temperature.</span></li>
+  <li data-n="5"><b>Self-attention and a tiny GPT</b><span>Every position may look at all earlier ones. Same data, same loss, same training loop, and much better text. Then you look at what the attention heads learned.</span></li>
+  <li data-n="6"><b>Pretrained LLMs for text analysis</b><span>Real models from Hugging Face, used as measuring tools: tokenizers across languages, perplexity, surprisal, zero-shot labels and sentence embeddings.</span></li>
+</ol>
+<p>They follow the warm-up notebooks 0 to 3b from the first crash course (regression, arbitrary functions, MNIST, autograd and neurons). If those ideas are new to you, read the <a href="crash-course.html">crash course page</a> first.</p>
+<div class="callout tip"><p><strong>The same model runs on the cluster.</strong> The tiny GPT of notebook 5 is <a href="lab.html#ex4">exercise 4</a> of the HPC lab, and the chat model at the end of notebook 6 is <a href="lab.html#ex6">exercise 6</a>. On an A100 or H100 you can train a model ten times bigger in the same time.</p></div>
+</article></div><nav class="pager wrap" aria-label="Previous and next page"><a class="pager-prev" href="crash-course.html"><span>Previous</span>Crash course</a><a class="pager-next" href="black-box.html"><span>Next</span>Black box</a></nav>
+</main>
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div>
+      <p class="foot-title"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="5" y="12" width="22" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11 16 4l11 7" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="19.5" r="2.4" fill="var(--amber)"/></svg> Behind the Secrets of LLMs</p>
+      <p>Lab material for the course <em>Behind the Secrets of Large Language Models</em> at TU Dresden (ScaDS.AI).</p>
+      <p class="foot-small">This site loads no trackers, no web fonts and no scripts from other servers. It is built from the repository with <code>website/build.py</code>.</p>
+    </div>
+    <div>
+      <p class="foot-head">The material</p>
+      <a href="https://github.com/himanshubeniwal/behind-llms-lab">GitHub repository</a>
+      <a href="https://github.com/himanshubeniwal/behind-llms-lab/archive/refs/heads/main.zip">Download everything (.zip)</a>
+      <a href="notebooks.html">Notebooks</a>
+      <a href="lab.html">HPC lab</a>
+    </div>
+    <div>
+      <p class="foot-head">Help with the cluster</p>
+      <a href="https://compendium.hpc.tu-dresden.de">ZIH HPC Compendium</a>
+      <a href="https://jupyterhub.hpc.tu-dresden.de">JupyterHub</a>
+      <a href="mailto:hpc-support@tu-dresden.de">hpc-support@tu-dresden.de</a>
+      <a href="cheatsheet.html">Cheat sheet</a>
+    </div>
+  </div>
+</footer>
+<script src="assets/site.js?v=f01bcb2a" defer></script>
+</body>
+</html>

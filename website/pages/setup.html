@@ -1,0 +1,162 @@
+<!--
+title: Get set up
+eyebrow: Step 2 · do this once
+lead: Four steps take you from your own terminal to a working Python environment with PyTorch on the cluster. After that, every job script switches the environment on by itself.
+description: Step by step setup for the lab: log in to the ZIH cluster with ssh, clone the lab kit, create the workspace and Python environment, and write job scripts for your own experiments.
+widgets: yes
+-->
+<h2>Before you start</h2>
+<ul>
+  <li>You have a <strong>ZIH login</strong> and you joined the course project <code>p_scads_lv_llm</code>.</li>
+  <li>You are on the <strong>university network or the VPN</strong>.</li>
+  <li>You have a <strong>terminal</strong>: Terminal on macOS and Linux, PowerShell or Windows Terminal on Windows. All of them know <code>ssh</code>.</li>
+</ul>
+<p>Not sure what a login node or a workspace is? Read <a href="clusters.html">Meet the machines</a> first.</p>
+
+<div class="zih-box">
+  <label for="zih">Your ZIH login</label>
+  <input class="zih-input" id="zih" type="text" placeholder="for example s1234567" autocomplete="off" autocapitalize="none" spellcheck="false">
+  <span>Type it once and every command on this site is ready to copy.</span>
+  <small>It stays in this browser and is not sent anywhere. Your password is never needed on this site.</small>
+</div>
+
+<h2>The four steps</h2>
+<ol class="steps">
+  <li>
+    <h3>Log in</h3>
+    <p>Pick a GPU cluster. Alpha has A100 GPUs, Capella has H100 GPUs. Both work for everything in this lab.</p>
+<x-code lang="bash" title="on your computer">
+ssh <zih-login>@login1.alpha.hpc.tu-dresden.de      # GPU cluster, 8 A100 per node
+ssh <zih-login>@login1.capella.hpc.tu-dresden.de    # GPU cluster, 4 H100 per node
+ssh <zih-login>@login1.barnard.hpc.tu-dresden.de    # CPU cluster
+</x-code>
+    <p>The first time, <code>ssh</code> asks if you trust the machine. Compare what it shows with the <a href="https://compendium.hpc.tu-dresden.de/access/key_fingerprints/">key fingerprints in the Compendium</a> and answer <code>yes</code>. Then type your ZIH password. Nothing appears while you type, that is normal.</p>
+    <details class="file">
+      <summary><span class="file-name">Optional: log in without typing the password every time</span></summary>
+      <div style="padding: 4px 16px 12px">
+        <p>Create a key pair on your own computer and copy the public half to the cluster. Give the key a passphrase when you are asked.</p>
+<x-code lang="bash" title="on your computer (macOS, Linux)">
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
+ssh-copy-id -i ~/.ssh/id_ed25519.pub <zih-login>@login1.alpha.hpc.tu-dresden.de
+</x-code>
+        <p>Windows has no <code>ssh-copy-id</code>. Copy the file over and add it by hand:</p>
+<x-code lang="bash" title="on Windows, in PowerShell">
+ssh-keygen -t ed25519
+scp $env:USERPROFILE\.ssh\id_ed25519.pub <zih-login>@login1.alpha.hpc.tu-dresden.de:
+ssh <zih-login>@login1.alpha.hpc.tu-dresden.de
+</x-code>
+<x-code lang="bash" title="then, on the login node">
+mkdir -p ~/.ssh && cat id_ed25519.pub >> ~/.ssh/authorized_keys && rm id_ed25519.pub
+</x-code>
+        <p class="small">More about keys and ssh settings is in the <a href="https://compendium.hpc.tu-dresden.de/access/ssh_login/">Compendium</a>.</p>
+      </div>
+    </details>
+  </li>
+  <li>
+    <h3>Get the lab kit</h3>
+    <p>You are now on a login node. Clone the repository into your home folder. It is small.</p>
+<x-code lang="bash" title="on the login node">
+git clone {{clone}}
+cd behind-llms-lab/hpc_lab
+</x-code>
+  </li>
+  <li>
+    <h3>Build the Python environment</h3>
+    <p>Installing PyTorch is real work, so it does not belong on the login node. Ask Slurm for a small interactive job, run the setup script there, and give the machine back.</p>
+<x-code lang="bash" title="on the login node">
+srun --account=p_scads_lv_llm --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G \
+     --time=00:45:00 --pty bash -l          # a small interactive job
+cd ~/behind-llms-lab/hpc_lab
+source 00_setup/setup_env.sh                # workspace, venv, training text
+exit                                        # give the machine back
+</x-code>
+    <p>The first run takes 5 to 10 minutes. At the end you should see something like this:</p>
+<x-code lang="text" title="what the setup script prints">
+workspace : /data/horse/ws/<zih-login>-llm-lab
+creating the venv /data/horse/ws/<zih-login>-llm-lab/venv-llm (only the first time, this takes a few minutes)
+python    : /data/horse/ws/<zih-login>-llm-lab/venv-llm/bin/python (Python 3.12.3)
+downloaded tiny Shakespeare to /data/horse/ws/<zih-login>-llm-lab/data/input.txt
+environment ready
+</x-code>
+    <div class="callout note"><p><strong>Use <code>source</code>, not <code>bash</code>.</strong> Only then does the environment stay switched on in your shell. From now on the same line takes a second, and the job scripts run it themselves.</p></div>
+  </li>
+  <li>
+    <h3>Check that it works</h3>
+    <p>Send the first job of the lab. It needs no GPU and only runs for a few seconds once it starts.</p>
+<x-code lang="bash" title="on the login node">
+cd ~/behind-llms-lab/hpc_lab/01_hello
+mkdir -p logs && sbatch hello.sbatch
+squeue --me                                 # PD means waiting, R means running
+cat logs/hello-hpc-*.out                    # when the job is gone from the queue
+</x-code>
+    <p>If the log shows the name of a compute node and an estimate of pi, you are ready for <a href="lab.html">the HPC lab</a>.</p>
+  </li>
+</ol>
+
+<h2 id="the-setup-script">The setup script</h2>
+<p><code>00_setup/setup_env.sh</code> does five things, and it is safe to run as often as you like:</p>
+<ol>
+  <li>It creates the workspace <code>llm-lab</code>, or reuses it. This is the big, fast storage for the environment, the data and the models.</li>
+  <li>It loads a Python module of the cluster.</li>
+  <li>It creates a virtual environment with PyTorch and transformers inside the workspace, or switches it on if it is already there.</li>
+  <li>It points the pip, Hugging Face and temporary caches into the workspace, away from the small home folder.</li>
+  <li>It downloads the tiny Shakespeare text that exercise 4 trains on.</li>
+</ol>
+<p>It also sets <code>$WS_DIR</code>, the path of your workspace. The job scripts use it for data and results.</p>
+<x-file path="hpc_lab/00_setup/setup_env.sh" open>
+
+<h3>Settings you may change</h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Setting</th><th>Default</th><th>What it is</th></tr></thead>
+  <tbody>
+    <tr><td><code>WS_NAME</code></td><td><code>llm-lab</code></td><td>The name of the workspace.</td></tr>
+    <tr><td><code>WS_FS</code></td><td><code>horse</code></td><td>The file system. <code>horse</code> works on all clusters.</td></tr>
+    <tr><td><code>WS_DAYS</code></td><td><code>30</code></td><td>The lifetime in days. Extend it later with <code>ws_extend</code>.</td></tr>
+    <tr><td><code>VENV_NAME</code></td><td><code>venv-llm</code></td><td>The name of the virtual environment.</td></tr>
+    <tr><td><code>PY_MODULES</code></td><td class="wrap-code"><code>release/24.10 GCCcore/13.3.0 Python/3.12.3</code></td><td>The Python module. Module versions change about twice a year. If loading fails, run <code>module spider Python</code> and put the new names here.</td></tr>
+    <tr><td><code>TORCH_INDEX</code></td><td class="wrap-code"><code>https://download.pytorch.org/whl/cu128</code></td><td>Which PyTorch build to install. This one fits the GPU drivers on Alpha and Capella.</td></tr>
+  </tbody>
+</table></div>
+
+<h2>Where to run the notebooks</h2>
+<div class="grid three">
+  <div class="card c-amber"><p class="eyebrow">the easy way</p><h3>Google Colab</h3><p>Nothing to install. Use the buttons on the <a href="notebooks.html">Notebooks</a> page. For notebooks 5 and 6, choose a T4 GPU under Runtime &gt; Change runtime type.</p></div>
+  <div class="card c-cyan"><p class="eyebrow">on the cluster</p><h3>JupyterHub</h3><p>Open <a href="https://jupyterhub.hpc.tu-dresden.de">jupyterhub.hpc.tu-dresden.de</a> from the university network, start a server, and pick the kernel <em>LLM Lab (venv-llm)</em>. The setup script installed it for you.</p></div>
+  <div class="card c-violet"><p class="eyebrow">offline</p><h3>Your laptop</h3><p>Clone the repository, then <code>pip install torch transformers matplotlib jupyter</code> in a virtual environment. The notebooks pick small settings when there is no GPU.</p></div>
+</div>
+
+<h2>Your own experiments</h2>
+<p class="lede">The lab kit is meant to be taken apart. Once the seven exercises work, the same pieces run your own code.</p>
+<ol>
+  <li><strong>Code goes into your home folder, everything big goes into the workspace.</strong> After <code>source 00_setup/setup_env.sh</code> the workspace is <code>$WS_DIR</code>. The lab uses <code>$WS_DIR/data</code> for data and <code>$WS_DIR/runs</code> for results.</li>
+  <li><strong>Need another package?</strong> Start an interactive job as in step 3, switch the environment on and install it. It lands in the environment in your workspace and every later job has it.</li>
+  <li><strong>Write a job script.</strong> Copy the one from the exercise that is closest to what you want and change the last line, or use the generator below.</li>
+  <li><strong>Send it and watch it.</strong> <code>sbatch</code>, <code>squeue --me</code>, <code>tail -f logs/…</code>. The <a href="cheatsheet.html">cheat sheet</a> has the rest.</li>
+</ol>
+<x-code lang="bash" title="add a package to the lab environment">
+srun --account=p_scads_lv_llm --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G --time=00:30:00 --pty bash -l
+source ~/behind-llms-lab/hpc_lab/00_setup/setup_env.sh
+pip install datasets                        # or whatever you need
+exit
+</x-code>
+
+<div class="widget" data-widget="sbatch"><div class="widget-body"><p>This job script generator needs JavaScript. Without it, copy <code>hpc_lab/04_tinygpt/train.sbatch</code> and change the last line.</p></div></div>
+
+<h3>Habits worth copying from the lab scripts</h3>
+<ul>
+  <li><strong>Create <code>logs/</code> before you submit.</strong> If the folder for the log file is missing, the job ends at once and leaves no trace.</li>
+  <li><strong>Print with <code>flush=True</code> or run <code>python -u</code>.</strong> Otherwise the log stays empty until the buffer is full.</li>
+  <li><strong>Save a checkpoint when Slurm says stop.</strong> Slurm sends SIGTERM when you cancel a job or when the time is over. <code>train_tinygpt.py</code> catches it and saves, and <code>--signal=TERM@60</code> makes the signal come 60 seconds early.</li>
+  <li><strong>Ask for what you need, not more.</strong> A job that asks for less time and fewer GPUs starts sooner.</li>
+  <li><strong>Download models on the login node first.</strong> Then set <code>HF_HUB_OFFLINE=1</code> in the job, as <a href="lab.html#ex6">exercise 6</a> does, so the job uses the copy in your workspace.</li>
+  <li><strong>Sweeps are job arrays.</strong> One script, one line <code>--array=0-3</code>, and <code>$SLURM_ARRAY_TASK_ID</code> picks the setting. See <a href="lab.html#ex5">exercise 5</a>.</li>
+</ul>
+
+<h3>A separate workspace for another project</h3>
+<p>The setup script takes its settings from the environment. To keep a project apart from the lab, give it its own workspace. Jobs you send from the same shell use it too.</p>
+<x-code lang="bash" title="on the login node, inside an interactive job the first time">
+unset WS_DIR                                # forget the lab workspace in this shell
+export WS_NAME=my-project
+source ~/behind-llms-lab/hpc_lab/00_setup/setup_env.sh
+</x-code>
+<div class="callout warn"><p><strong>The course project is for the course.</strong> Jobs with <code>--account=p_scads_lv_llm</code> are booked on the course. For your thesis or your own research, ask your supervisor which HPC project to use and put its name there.</p></div>

@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The HPC lab · Behind the Secrets of LLMs</title>
+<meta name="description" content="The seven HPC lab exercises with all code: first Slurm batch job, cancelling jobs, requesting a GPU, training a tiny GPT, a learning-rate sweep with job arrays, and running a pretrained LLM.">
+<meta property="og:title" content="The HPC lab · Behind the Secrets of LLMs">
+<meta property="og:description" content="The seven HPC lab exercises with all code: first Slurm batch job, cancelling jobs, requesting a GPU, training a tiny GPT, a learning-rate sweep with job arrays, and running a pretrained LLM.">
+<meta property="og:type" content="website">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css?v=f01bcb2a">
+<script>(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t}catch(e){}})()</script>
+</head>
+<body class="page-lab">
+<a class="skip" href="#main">Skip to the content</a>
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="index.html"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="5" y="12" width="22" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11 16 4l11 7" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="19.5" r="2.4" fill="var(--amber)"/></svg><span class="brand-text"><b>Behind the Secrets of LLMs</b><i>lab</i></span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav">Menu</button>
+    <nav id="nav" class="nav" aria-label="Main"><a href="index.html">Overview</a><a href="clusters.html">Clusters</a><a href="setup.html">Setup</a><a href="lab.html" aria-current="page">HPC lab</a><a href="crash-course.html">Crash course</a><a href="notebooks.html">Notebooks</a><a href="black-box.html">Black box</a><a href="cheatsheet.html">Cheat sheet</a></nav>
+    <div class="top-tools">
+      <a class="icon-btn" href="https://github.com/himanshubeniwal/behind-llms-lab" aria-label="The repository on GitHub" title="GitHub repository"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg></a>
+      <button class="icon-btn theme-toggle" type="button" aria-label="Switch between dark and light" title="Dark or light"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 0 18V3Z"/><circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+    </div>
+  </div>
+</header>
+<main id="main">
+<header class="page-hero"><div class="wrap"><p class="eyebrow">Step 3 · hands on</p><h1>The HPC lab</h1><p class="lead">Seven small exercises. Each one is a folder with a short Python script and the Slurm job script that runs it. You start with a job that says hello and end with a real language model answering your prompts on a GPU.</p></div></header><div class="wrap layout has-toc"><article class="prose">
+<h2 id="how-every-exercise-works">How every exercise works<a class="anchor" href="#how-every-exercise-works" aria-label="Link to this section">#</a></h2>
+<p class="lede">Go into the folder, make a folder for the logs, send the job, and read the log when it is done. That is the whole rhythm of working on a cluster.</p>
+<figure class="code "><figcaption><span class="code-title">the pattern</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/01_hello<span class="w">      </span><span class="c1"># one folder per exercise</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w">                              </span><span class="c1"># the job writes its log here</span>
+sbatch<span class="w"> </span>hello.sbatch<span class="w">                        </span><span class="c1"># prints: Submitted batch job &lt;jobid&gt;</span>
+squeue<span class="w"> </span>--me<span class="w">                                </span><span class="c1"># is it waiting (PD) or running (R)?</span>
+cat<span class="w"> </span>logs/hello-hpc-&lt;jobid&gt;.out<span class="w">             </span><span class="c1"># what the program printed</span></code></pre></figure>
+<p>You need the environment from <a href="setup.html">Setup</a> for exercises 3 to 6. The first two only use the Python that is already on the cluster. Our project is <code>p_scads_lv_llm</code>, and it is already written into every job script.</p>
+
+<ul class="ex-nav">
+  <li><a href="setup.html"><b>0</b>Set up Python once</a></li>
+  <li><a href="#ex1"><b>1</b>Your first batch job</a></li>
+  <li><a href="#ex2"><b>2</b>Watch and cancel a job</a></li>
+  <li><a href="#ex3"><b>3</b>Get a GPU</a></li>
+  <li><a href="#ex4"><b>4</b>Train a tiny GPT</a></li>
+  <li><a href="#ex5"><b>5</b>A sweep with a job array</a></li>
+  <li><a href="#ex6"><b>6</b>Run a real LLM</a></li>
+</ul>
+
+<section class="ex" id="ex1">
+  <div class="ex-head"><div class="ex-num">1</div><div>
+    <h2 id="your-first-batch-job">Your first batch job<a class="anchor" href="#your-first-batch-job" aria-label="Link to this section">#</a></h2>
+    <div class="meta-row"><span>01_hello</span><span>any cluster</span><span>CPU only</span><span>time limit 5 min</span></div>
+  </div></div>
+  <p><strong>You practise:</strong> your first <code>sbatch</code>, the variables Slurm gives a job, and why <code>--cpus-per-task</code> matters.</p>
+  <p>The Python script prints where it runs and what Slurm gave it. Then it estimates π by throwing random darts at a square, split over all the CPU cores the job got.</p>
+<figure class="code "><figcaption><span class="code-title">run it</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/01_hello
+mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sbatch<span class="w"> </span>hello.sbatch
+squeue<span class="w"> </span>--me
+cat<span class="w"> </span>logs/hello-hpc-&lt;jobid&gt;.out</code></pre></figure>
+  <h3>What to look for in the log</h3>
+  <ul>
+    <li><strong>Hello from</strong> shows the name of a compute node, not of the login node you typed on.</li>
+    <li><strong>os.cpu_count()</strong> is every core of that node. <strong>CPUs I may use</strong> is 4, because the job script asked for 4. Slurm keeps you inside what you asked for.</li>
+    <li>The lines starting with <code>SLURM_</code> are environment variables that every job gets: its ID, its name, the project, the node.</li>
+    <li>The last two lines give π and the speed in million samples per second.</li>
+  </ul>
+  <div class="callout try"><p><strong>Try it.</strong> Options on the command line win over the <code>#SBATCH</code> lines, so you can change the number of cores without editing the file. Compare the speed.</p>
+<figure class="code "><figcaption><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">sbatch<span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">1</span><span class="w"> </span>hello.sbatch
+sbatch<span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">8</span><span class="w"> </span>hello.sbatch</code></pre></figure></div>
+  <h3>Reading the job script</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Line</th><th>What it says</th></tr></thead>
+    <tbody>
+      <tr><td><code>--job-name=hello-hpc</code></td><td>The name you see in <code>squeue</code>.</td></tr>
+      <tr><td><code>--account=p_scads_lv_llm</code></td><td>The project that pays for the computing time.</td></tr>
+      <tr><td><code>--ntasks=1</code></td><td>One process.</td></tr>
+      <tr><td><code>--cpus-per-task=4</code></td><td>With 4 cores.</td></tr>
+      <tr><td><code>--mem-per-cpu=1G</code></td><td>1 GB of memory for each core.</td></tr>
+      <tr><td><code>--time=00:05:00</code></td><td>A hard time limit, as hours:minutes:seconds. After that Slurm stops the job.</td></tr>
+      <tr><td><code>--output=logs/%x-%j.out</code></td><td>Where the printed text goes. <code>%x</code> is the job name and <code>%j</code> the job ID. The <code>logs</code> folder has to exist before you submit.</td></tr>
+      <tr><td><code>srun python3 …</code></td><td>Starts the program inside the job. Everything before it only describes the job.</td></tr>
+    </tbody>
+  </table></div>
+  <details class="file" open><summary><span class="file-name">hello.sbatch</span><span class="file-meta">33 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/01_hello/hello.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/01_hello/hello.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+<span class="c1"># Exercise 1: your first batch job (CPU only, works on any cluster)</span>
+<span class="c1">#</span>
+<span class="c1"># Submit it from a login node:</span>
+<span class="c1">#   mkdir -p logs &amp;&amp; sbatch hello.sbatch</span>
+<span class="c1"># Check on it:</span>
+<span class="c1">#   squeue --me</span>
+<span class="c1"># Read the result:</span>
+<span class="c1">#   cat logs/hello-hpc-&lt;jobid&gt;.out</span>
+<span class="c1">#</span>
+<span class="c1"># Then try other core counts without editing this file:</span>
+<span class="c1">#   sbatch --cpus-per-task=1 hello.sbatch</span>
+<span class="c1">#   sbatch --cpus-per-task=8 hello.sbatch</span>
+<span class="c1">#</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">hello-hpc</span>          <span class="c1"># the name you see in squeue</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_scads_lv_llm</span>      <span class="c1"># our course project, it pays for the CPU time</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>                    <span class="c1"># one process</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">4</span>             <span class="c1"># with 4 cores</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--mem-per-cpu</span>=<span class="sbv">1G</span>              <span class="c1"># memory per core</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--time</span>=<span class="sbv">00:05:00</span>               <span class="c1"># hard time limit, hh:mm:ss</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--output</span>=<span class="sbv">logs/%x-%j.out</span>       <span class="c1"># %x is the job name, %j the job ID</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--error</span>=<span class="sbv">logs/%x-%j.err</span>        <span class="c1"># the logs folder has to exist before you submit</span>
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Job </span><span class="nv">$SLURM_JOB_ID</span><span class="s2"> started on </span><span class="k">$(</span>hostname<span class="k">)</span><span class="s2"> at </span><span class="k">$(</span>date<span class="k">)</span><span class="s2">&quot;</span>
+
+<span class="c1"># Make sure srun passes all our cores on to the program</span>
+<span class="c1"># (newer Slurm versions don&#39;t do this by themselves).</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">SRUN_CPUS_PER_TASK</span><span class="o">=</span><span class="nv">$SLURM_CPUS_PER_TASK</span>
+
+<span class="c1"># The system python3 is enough for this one.</span>
+srun<span class="w"> </span>python3<span class="w"> </span>hello_hpc.py<span class="w"> </span>--samples<span class="w"> </span><span class="m">20000000</span>
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Job finished at </span><span class="k">$(</span>date<span class="k">)</span><span class="s2">&quot;</span></code></pre></figure></details>
+  <details class="file"><summary><span class="file-name">hello_hpc.py</span><span class="file-meta">79 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/01_hello/hello_hpc.py</span><span class="code-lang">python</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/01_hello/hello_hpc.py">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Exercise 1: where am I running, and what did Slurm give me?</span>
+
+<span class="sd">Prints the node name, the Python version and the Slurm variables of the job.</span>
+<span class="sd">Then it estimates pi with random numbers, split over all the CPU cores the job</span>
+<span class="sd">got. Run it with --cpus-per-task=1 and with 4, and compare the time.</span>
+
+<span class="sd">Only uses the standard library, so the system python3 is enough.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="k">as</span> <span class="nn">mp</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">platform</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+
+<span class="k">def</span> <span class="nf">slurm_info</span><span class="p">():</span>
+    <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;SLURM_JOB_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;SLURM_JOB_NAME&quot;</span><span class="p">,</span> <span class="s2">&quot;SLURM_JOB_ACCOUNT&quot;</span><span class="p">,</span> <span class="s2">&quot;SLURM_JOB_PARTITION&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;SLURM_JOB_NODELIST&quot;</span><span class="p">,</span> <span class="s2">&quot;SLURM_CPUS_PER_TASK&quot;</span><span class="p">,</span> <span class="s2">&quot;SLURM_MEM_PER_CPU&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;SLURM_ARRAY_TASK_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;SLURM_SUBMIT_DIR&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">available_cpus</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;CPUs this process may use (respects Slurm&#39;s CPU binding, unlike os.cpu_count()).&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sched_getaffinity</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>  <span class="c1"># macOS / Windows</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span> <span class="ow">or</span> <span class="mi">1</span>
+
+
+<span class="k">def</span> <span class="nf">count_hits</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Throw n random darts at the unit square; count those inside the quarter circle.&quot;&quot;&quot;</span>
+    <span class="n">n</span><span class="p">,</span> <span class="n">seed</span> <span class="o">=</span> <span class="n">args</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">hits</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">(),</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span> <span class="o">*</span> <span class="n">y</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="n">hits</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">hits</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--samples&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10_000_000</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;total number of darts&quot;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello from        : </span><span class="si">{</span><span class="n">socket</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Python            : </span><span class="si">{</span><span class="n">platform</span><span class="o">.</span><span class="n">python_version</span><span class="p">()</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="n">platform</span><span class="o">.</span><span class="n">python_implementation</span><span class="p">()</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;os.cpu_count()    : </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span><span class="si">}</span><span class="s2">   &lt;- all cores of the node&quot;</span><span class="p">)</span>
+    <span class="n">n_cpus</span> <span class="o">=</span> <span class="n">available_cpus</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CPUs I may use    : </span><span class="si">{</span><span class="n">n_cpus</span><span class="si">}</span><span class="s2">   &lt;- what Slurm allocated to me&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">slurm_info</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">k</span><span class="si">:</span><span class="s2">&lt;20</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+
+    <span class="c1"># split the work into one chunk per CPU</span>
+    <span class="n">chunk</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">samples</span> <span class="o">//</span> <span class="n">n_cpus</span>
+    <span class="n">jobs</span> <span class="o">=</span> <span class="p">[(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">seed</span><span class="p">)</span> <span class="k">for</span> <span class="n">seed</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_cpus</span><span class="p">)]</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">mp</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">n_cpus</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+        <span class="n">hits</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">count_hits</span><span class="p">,</span> <span class="n">jobs</span><span class="p">))</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+
+    <span class="n">pi</span> <span class="o">=</span> <span class="mf">4.0</span> <span class="o">*</span> <span class="n">hits</span> <span class="o">/</span> <span class="p">(</span><span class="n">chunk</span> <span class="o">*</span> <span class="n">n_cpus</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;pi ~ </span><span class="si">{</span><span class="n">pi</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">   (</span><span class="si">{</span><span class="n">chunk</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n_cpus</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> samples on </span><span class="si">{</span><span class="n">n_cpus</span><span class="si">}</span><span class="s2"> CPU(s) in </span><span class="si">{</span><span class="n">dt</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;throughput        : </span><span class="si">{</span><span class="n">chunk</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n_cpus</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">dt</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e6</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> M samples/s&quot;</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span></code></pre></figure></details>
+</section>
+
+<section class="ex" id="ex2">
+  <div class="ex-head"><div class="ex-num">2</div><div>
+    <h2 id="watch-a-job-then-cancel-it">Watch a job, then cancel it<a class="anchor" href="#watch-a-job-then-cancel-it" aria-label="Link to this section">#</a></h2>
+    <div class="meta-row"><span>02_cancel</span><span>any cluster</span><span>CPU only</span><span>time limit 10 min</span></div>
+  </div></div>
+  <p><strong>You practise:</strong> <code>squeue</code>, <code>scontrol</code>, <code>scancel</code>, <code>sacct</code>, and saving your work when the job is stopped.</p>
+  <p>This job is slow on purpose. It prints one line every 10 seconds for 8 minutes, so you have time to look at it from the outside and then stop it.</p>
+<figure class="code "><figcaption><span class="code-title">run it, look at it, stop it</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/02_cancel
+mkdir<span class="w"> </span>-p<span class="w"> </span>logs
+sbatch<span class="w"> </span>sleepy.sbatch<span class="w">                 </span><span class="c1"># prints &quot;Submitted batch job &lt;jobid&gt;&quot;</span>
+squeue<span class="w"> </span>--me<span class="w">                          </span><span class="c1"># the ST column goes from PD (pending) to R (running)</span>
+scontrol<span class="w"> </span>show<span class="w"> </span>job<span class="w"> </span>&lt;jobid&gt;<span class="w">            </span><span class="c1"># everything Slurm knows about the job</span>
+tail<span class="w"> </span>-f<span class="w"> </span>logs/sleepy-&lt;jobid&gt;.out<span class="w">      </span><span class="c1"># live log, Ctrl+C stops tail but not the job</span>
+scancel<span class="w"> </span>&lt;jobid&gt;<span class="w">                      </span><span class="c1"># stop it, then look for &quot;received signal&quot; in the log</span>
+sacct<span class="w"> </span>-j<span class="w"> </span>&lt;jobid&gt;<span class="w"> </span>--format<span class="o">=</span>JobID,JobName,State,Elapsed,ExitCode</code></pre></figure>
+  <h3>What to look for</h3>
+  <p>When you cancel a job, Slurm first sends the signal SIGTERM, which means “please stop”, and only later SIGKILL. The script catches SIGTERM and writes a small checkpoint file. A real training script should do the same. The end of the log looks like this:</p>
+<figure class="code output"><figcaption><span class="code-title">the end of the log (your numbers differ)</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">[sleepy] step    3  22:49:28  still working...
+[sleepy] step    4  22:49:29  still working...
+[sleepy] received signal 15 (SIGTERM) -&gt; cleaning up
+[sleepy] saved checkpoint-&lt;jobid&gt;.json at step 4 (cancelled)</code></pre></figure>
+  <div class="callout try"><p><strong>Bonus: a job that waits on purpose.</strong> The REASON column of <code>squeue</code> tells you why a job is not running yet. <code>whypending</code> is a ZIH helper that explains it in more words.</p>
+<figure class="code "><figcaption><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">sbatch<span class="w"> </span>--begin<span class="o">=</span>now+5minutes<span class="w"> </span>sleepy.sbatch
+squeue<span class="w"> </span>--me<span class="w">                          </span><span class="c1"># the REASON column says (BeginTime)</span>
+whypending<span class="w"> </span>&lt;jobid&gt;</code></pre></figure></div>
+  <details class="file" open><summary><span class="file-name">sleepy.sbatch</span><span class="file-meta">27 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/02_cancel/sleepy.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/02_cancel/sleepy.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+<span class="c1"># Exercise 2: watch a job, then cancel it</span>
+<span class="c1">#</span>
+<span class="c1">#   mkdir -p logs</span>
+<span class="c1">#   sbatch sleepy.sbatch                 # prints &quot;Submitted batch job &lt;jobid&gt;&quot;</span>
+<span class="c1">#   squeue --me                          # the ST column goes from PD (pending) to R (running)</span>
+<span class="c1">#   scontrol show job &lt;jobid&gt;            # everything Slurm knows about the job</span>
+<span class="c1">#   tail -f logs/sleepy-&lt;jobid&gt;.out      # live log, Ctrl+C stops tail but not the job</span>
+<span class="c1">#   scancel &lt;jobid&gt;                      # stop it, then look for &quot;received signal&quot; in the log</span>
+<span class="c1">#   sacct -j &lt;jobid&gt; --format=JobID,JobName,State,Elapsed,ExitCode</span>
+<span class="c1">#</span>
+<span class="c1"># Bonus, a job that waits on purpose:</span>
+<span class="c1">#   sbatch --begin=now+5minutes sleepy.sbatch</span>
+<span class="c1">#   squeue --me                          # the REASON column says (BeginTime)</span>
+<span class="c1">#   whypending &lt;jobid&gt;                   # ZIH helper that explains why a job waits</span>
+<span class="c1">#</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">sleepy</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_scads_lv_llm</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--mem-per-cpu</span>=<span class="sbv">500M</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--time</span>=<span class="sbv">00:10:00</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--output</span>=<span class="sbv">logs/%x-%j.out</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--error</span>=<span class="sbv">logs/%x-%j.err</span>
+
+<span class="c1"># -u turns off output buffering, so tail -f shows every line right away</span>
+srun<span class="w"> </span>python3<span class="w"> </span>-u<span class="w"> </span>sleepy.py<span class="w"> </span>--minutes<span class="w"> </span><span class="m">8</span><span class="w"> </span>--every<span class="w"> </span><span class="m">10</span></code></pre></figure></details>
+  <details class="file"><summary><span class="file-name">sleepy.py</span><span class="file-meta">56 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/02_cancel/sleepy.py</span><span class="code-lang">python</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/02_cancel/sleepy.py">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Exercise 2: a job that is slow on purpose, so you can practise squeue,</span>
+<span class="sd">scontrol and scancel.</span>
+
+<span class="sd">It prints a line every few seconds. When you cancel the job, Slurm first sends</span>
+<span class="sd">SIGTERM (&quot;please stop&quot;) and only later SIGKILL. We catch SIGTERM and write a</span>
+<span class="sd">small checkpoint file. A real training script should do the same.</span>
+
+<span class="sd">Only uses the standard library, so the system python3 is enough.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">signal</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="n">STATE</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">save_checkpoint</span><span class="p">(</span><span class="n">reason</span><span class="p">):</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;checkpoint-</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;SLURM_JOB_ID&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;local&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">.json&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">({</span><span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="n">STATE</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">],</span> <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="n">reason</span><span class="p">,</span> <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">ctime</span><span class="p">()},</span> <span class="n">f</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[sleepy] saved </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2"> at step </span><span class="si">{</span><span class="n">STATE</span><span class="p">[</span><span class="s1">&#39;step&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">on_sigterm</span><span class="p">(</span><span class="n">signum</span><span class="p">,</span> <span class="n">frame</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[sleepy] received signal </span><span class="si">{</span><span class="n">signum</span><span class="si">}</span><span class="s2"> (SIGTERM) -&gt; cleaning up&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">save_checkpoint</span><span class="p">(</span><span class="s2">&quot;cancelled&quot;</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--minutes&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">8.0</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--every&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;seconds between heartbeats&quot;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGTERM</span><span class="p">,</span> <span class="n">on_sigterm</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[sleepy] pid </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span><span class="si">}</span><span class="s2"> on </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">uname</span><span class="p">()</span><span class="o">.</span><span class="n">nodename</span><span class="si">}</span><span class="s2">, &quot;</span>
+          <span class="sa">f</span><span class="s2">&quot;running for </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">minutes</span><span class="si">}</span><span class="s2"> min. Cancel me with: scancel </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;SLURM_JOB_ID&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&lt;jobid&gt;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+          <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">t_end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">+</span> <span class="mi">60</span> <span class="o">*</span> <span class="n">args</span><span class="o">.</span><span class="n">minutes</span>
+    <span class="k">while</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">t_end</span><span class="p">:</span>
+        <span class="n">STATE</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[sleepy] step </span><span class="si">{</span><span class="n">STATE</span><span class="p">[</span><span class="s1">&#39;step&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">4d</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%H:%M:%S&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">  still working...&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">every</span><span class="p">)</span>
+
+    <span class="n">save_checkpoint</span><span class="p">(</span><span class="s2">&quot;finished&quot;</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span></code></pre></figure></details>
+</section>
+
+<section class="ex" id="ex3">
+  <div class="ex-head"><div class="ex-num">3</div><div>
+    <h2 id="ask-for-a-gpu-and-measure-it">Ask for a GPU and measure it<a class="anchor" href="#ask-for-a-gpu-and-measure-it" aria-label="Link to this section">#</a></h2>
+    <div class="meta-row"><span>03_gpu</span><span>Alpha or Capella</span><span>1 GPU</span><span>time limit 10 min</span></div>
+  </div></div>
+  <p><strong>You practise:</strong> <code>--gres=gpu:1</code>, <code>nvidia-smi</code>, and the difference between a CPU and a GPU.</p>
+  <p>The script multiplies two big matrices, which is the main work inside every layer of a language model. It does it first on the CPU cores and then on the GPU, and prints the speed in TFLOP/s, that is 10<sup>12</sup> floating point operations per second.</p>
+<figure class="code "><figcaption><span class="code-title">run it from an Alpha or Capella login node</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/03_gpu
+mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sbatch<span class="w"> </span>gpu.sbatch
+cat<span class="w"> </span>logs/gpu-check-&lt;jobid&gt;.out</code></pre></figure>
+  <h3>What to look for in the log</h3>
+  <ul>
+    <li>The table from <code>nvidia-smi</code> shows exactly one GPU, an A100 on Alpha or an H100 on Capella. The node has more, but you only see the one you asked for.</li>
+    <li><strong>CUDA available: True</strong>, and the name and memory of the GPU.</li>
+    <li>Three speed lines: the CPU with 32-bit numbers, the GPU with 32-bit numbers, and the GPU with 16-bit numbers (<code>bfloat16</code>). How many times faster is the GPU? What does it gain from the smaller numbers?</li>
+  </ul>
+  <div class="callout warn"><p><strong>The line that gets you a GPU</strong> is <code>#SBATCH --gres=gpu:1</code>. Without it the job still runs on a GPU cluster, but the script prints <em>No GPU found</em>. And every cluster has its own Slurm, so a job sent from Barnard never gets a GPU.</p></div>
+  <div class="callout try"><p><strong>Try it.</strong> Everything in the last line of the job script can be changed. Make the matrices smaller or bigger with <code>--n</code> and see when the GPU stops being worth it.</p></div>
+  <details class="file" open><summary><span class="file-name">gpu.sbatch</span><span class="file-meta">28 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/03_gpu/gpu.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/03_gpu/gpu.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+<span class="c1"># Exercise 3: ask for one GPU and see how fast it is</span>
+<span class="c1">#</span>
+<span class="c1"># Submit it from a login node of a GPU cluster:</span>
+<span class="c1">#   ssh <span class="zih">&lt;zih-login&gt;</span>@login1.alpha.hpc.tu-dresden.de      (A100)  or</span>
+<span class="c1">#   ssh <span class="zih">&lt;zih-login&gt;</span>@login1.capella.hpc.tu-dresden.de    (H100)</span>
+<span class="c1">#   cd 03_gpu &amp;&amp; mkdir -p logs &amp;&amp; sbatch gpu.sbatch</span>
+<span class="c1">#</span>
+<span class="c1"># Every cluster has its own Slurm, so a job sent from Barnard never gets a GPU.</span>
+<span class="c1">#</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">gpu-check</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_scads_lv_llm</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">6</span>             <span class="c1"># CPU cores that come with the GPU</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--gres</span>=<span class="sbv">gpu:1</span>                  <span class="c1"># this is the line that gets you a GPU</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--mem</span>=<span class="sbv">32G</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--time</span>=<span class="sbv">00:10:00</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--output</span>=<span class="sbv">logs/%x-%j.out</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--error</span>=<span class="sbv">logs/%x-%j.err</span>
+
+<span class="nb">source</span><span class="w"> </span>../00_setup/setup_env.sh<span class="w">       </span><span class="c1"># workspace, Python module and venv with PyTorch</span>
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;---- nvidia-smi ----&quot;</span>
+nvidia-smi
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;--------------------&quot;</span>
+
+<span class="nb">export</span><span class="w"> </span><span class="nv">SRUN_CPUS_PER_TASK</span><span class="o">=</span><span class="nv">$SLURM_CPUS_PER_TASK</span>
+srun<span class="w"> </span>python<span class="w"> </span>gpu_check.py<span class="w"> </span>--n<span class="w"> </span><span class="m">8192</span><span class="w"> </span>--repeats<span class="w"> </span><span class="m">20</span></code></pre></figure></details>
+  <details class="file"><summary><span class="file-name">gpu_check.py</span><span class="file-meta">68 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/03_gpu/gpu_check.py</span><span class="code-lang">python</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/03_gpu/gpu_check.py">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Exercise 3: did I really get a GPU, and how fast is it?</span>
+
+<span class="sd">1. Prints the PyTorch and CUDA versions and the GPUs this job can see.</span>
+<span class="sd">2. Multiplies two big matrices (the main work inside every LLM layer), first on</span>
+<span class="sd">   the CPU and then on the GPU, and prints the speed in TFLOP/s.</span>
+
+<span class="sd">Needs PyTorch, so run &quot;source 00_setup/setup_env.sh&quot; first.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+
+
+<span class="k">def</span> <span class="nf">bench</span><span class="p">(</span><span class="n">device</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">repeats</span><span class="p">):</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">a</span> <span class="o">@</span> <span class="n">b</span>                                   <span class="c1"># warm-up (CUDA kernels get loaded lazily)</span>
+    <span class="k">if</span> <span class="n">device</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;cuda&quot;</span><span class="p">:</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>                <span class="c1"># GPU work is asynchronous: wait for it!</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">repeats</span><span class="p">):</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">a</span> <span class="o">@</span> <span class="n">b</span>
+    <span class="k">if</span> <span class="n">device</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;cuda&quot;</span><span class="p">:</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">/</span> <span class="n">repeats</span>
+    <span class="n">flops</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span> <span class="o">**</span> <span class="mi">3</span>                          <span class="c1"># n^3 multiply-adds = 2 n^3 floating point ops</span>
+    <span class="k">return</span> <span class="n">dt</span><span class="p">,</span> <span class="n">flops</span> <span class="o">/</span> <span class="n">dt</span> <span class="o">/</span> <span class="mf">1e12</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--n&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">4096</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;matrix size n x n&quot;</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--repeats&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;torch version         : </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CUDA available        : </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES  : </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;CUDA_VISIBLE_DEVICES&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CUDA (torch build)    : </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">cuda</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">device_count</span><span class="p">()):</span>
+            <span class="n">prop</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">get_device_properties</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GPU </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">                 : </span><span class="si">{</span><span class="n">prop</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">prop</span><span class="o">.</span><span class="n">total_memory</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="o">**</span><span class="mi">30</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> GiB&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No GPU found. Did you ask for one with --gres=gpu:1 ?&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+
+    <span class="n">n_cpu_threads</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">get_num_threads</span><span class="p">()</span>
+    <span class="n">cpu_n</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="mi">2048</span><span class="p">)</span>                   <span class="c1"># keep the CPU run short</span>
+    <span class="n">dt</span><span class="p">,</span> <span class="n">tflops</span> <span class="o">=</span> <span class="n">bench</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">),</span> <span class="n">cpu_n</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">repeats</span> <span class="o">//</span> <span class="mi">5</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CPU  (</span><span class="si">{</span><span class="n">n_cpu_threads</span><span class="si">:</span><span class="s2">2d</span><span class="si">}</span><span class="s2"> threads) fp32 </span><span class="si">{</span><span class="n">cpu_n</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">cpu_n</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">dt</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">1e3</span><span class="si">:</span><span class="s2">8.1f</span><span class="si">}</span><span class="s2"> ms  -&gt;  </span><span class="si">{</span><span class="n">tflops</span><span class="si">:</span><span class="s2">6.2f</span><span class="si">}</span><span class="s2"> TFLOP/s&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+        <span class="n">gpu</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">):</span>
+            <span class="n">dt</span><span class="p">,</span> <span class="n">tflops</span> <span class="o">=</span> <span class="n">bench</span><span class="p">(</span><span class="n">gpu</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">repeats</span><span class="p">)</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;torch.&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GPU  </span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">&gt;8s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">dt</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">1e3</span><span class="si">:</span><span class="s2">8.1f</span><span class="si">}</span><span class="s2"> ms  -&gt;  </span><span class="si">{</span><span class="n">tflops</span><span class="si">:</span><span class="s2">6.2f</span><span class="si">}</span><span class="s2"> TFLOP/s&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;peak GPU memory used  : </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">max_memory_allocated</span><span class="p">()</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="o">**</span><span class="mi">20</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> MiB&quot;</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span></code></pre></figure></details>
+</section>
+
+<section class="ex" id="ex4">
+  <div class="ex-head"><div class="ex-num">4</div><div>
+    <h2 id="train-a-tiny-gpt">Train a tiny GPT<a class="anchor" href="#train-a-tiny-gpt" aria-label="Link to this section">#</a></h2>
+    <div class="meta-row"><span>04_tinygpt</span><span>Alpha or Capella</span><span>1 GPU</span><span>time limit 30 min</span></div>
+  </div></div>
+  <p><strong>You practise:</strong> a real training run as a batch job, watching the loss in the log, and using the result afterwards.</p>
+  <p>The model is a small GPT that reads and writes single characters. It is the same model you build step by step in <a href="notebooks/5-attention-and-tinygpt.html">notebook 5</a>: 4 Transformer blocks, about 0.8 million parameters. It trains for 5000 steps on tiny Shakespeare, about 1 MB of plays in one text file.</p>
+<figure class="code "><figcaption><span class="code-title">run it</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/04_tinygpt
+mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sbatch<span class="w"> </span>train.sbatch
+tail<span class="w"> </span>-f<span class="w"> </span>logs/tinygpt-&lt;jobid&gt;.out<span class="w">          </span><span class="c1"># watch the loss go down</span></code></pre></figure>
+  <h3>What to look for in the log</h3>
+  <ul>
+    <li>The first line shows <code>device=cuda</code>, the size of the vocabulary (65 characters) and the number of parameters.</li>
+    <li>Every 250 steps there is a line with the training loss, the validation loss and the speed in tokens per second.</li>
+    <li>A model that knows nothing has a loss of log 65 ≈ 4.17. The counting model from <a href="notebooks/4-tokens-and-bigram-lm.html">notebook 4</a> gets stuck around 2.5. Where does this one end up?</li>
+    <li>At the end the model writes 500 characters of its own Shakespeare.</li>
+  </ul>
+  <p>The job writes three files into <code>$WS_DIR/runs/tinygpt-&lt;jobid&gt;</code>: <code>ckpt.pt</code> with the weights, <code>metrics.json</code> with the final losses, and <code>samples.txt</code> with the generated text.</p>
+  <h3>Let the model write</h3>
+<figure class="code "><figcaption><span class="code-title">in an interactive job, or briefly on the login node</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">source</span><span class="w"> </span>../00_setup/setup_env.sh
+python<span class="w"> </span>sample.py<span class="w"> </span>--ckpt<span class="w"> </span><span class="nv">$WS_DIR</span>/runs/tinygpt-&lt;jobid&gt;/ckpt.pt<span class="w"> </span>--prompt<span class="w"> </span><span class="s2">&quot;ROMEO:&quot;</span>
+python<span class="w"> </span>sample.py<span class="w"> </span>--ckpt<span class="w"> </span><span class="nv">$WS_DIR</span>/runs/tinygpt-&lt;jobid&gt;/ckpt.pt<span class="w"> </span>--prompt<span class="w"> </span><span class="s2">&quot;ROMEO:&quot;</span><span class="w"> </span>--temperature<span class="w"> </span><span class="m">0</span>.3
+python<span class="w"> </span>sample.py<span class="w"> </span>--ckpt<span class="w"> </span><span class="nv">$WS_DIR</span>/runs/tinygpt-&lt;jobid&gt;/ckpt.pt<span class="w"> </span>--prompt<span class="w"> </span><span class="s2">&quot;ROMEO:&quot;</span><span class="w"> </span>--temperature<span class="w"> </span><span class="m">1</span>.5<span class="w"> </span>--top-k<span class="w"> </span><span class="m">5</span></code></pre></figure>
+  <div class="callout try"><p><strong>Try it: a bigger model.</strong> Everything after the name of the job script is passed on to Python.</p>
+<figure class="code "><figcaption><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">sbatch<span class="w"> </span>train.sbatch<span class="w"> </span>--n-layer<span class="w"> </span><span class="m">6</span><span class="w"> </span>--n-embd<span class="w"> </span><span class="m">384</span>
+sbatch<span class="w"> </span>train.sbatch<span class="w"> </span>--n-layer<span class="w"> </span><span class="m">6</span><span class="w"> </span>--n-head<span class="w"> </span><span class="m">6</span><span class="w"> </span>--n-embd<span class="w"> </span><span class="m">384</span><span class="w"> </span>--block-size<span class="w"> </span><span class="m">256</span></code></pre></figure>
+  <p><strong>Try it: a job that runs out of time.</strong> Is <code>ckpt.pt</code> still saved? Look at the line <code>--signal=TERM@60</code> in the job script and at <code>on_sigterm</code> in the Python script.</p>
+<figure class="code "><figcaption><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">sbatch<span class="w"> </span>--time<span class="o">=</span><span class="m">00</span>:02:00<span class="w"> </span>train.sbatch</code></pre></figure></div>
+  <h3>The options of the training script</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Option</th><th>Default</th><th>What it is</th></tr></thead>
+    <tbody>
+      <tr><td><code>--steps</code></td><td>3000</td><td>Number of training steps. The job script sets 5000.</td></tr>
+      <tr><td><code>--lr</code></td><td>1e-3</td><td>Learning rate.</td></tr>
+      <tr><td><code>--batch-size</code></td><td>64</td><td>How many text windows per step.</td></tr>
+      <tr><td><code>--block-size</code></td><td>128</td><td>The context length in characters.</td></tr>
+      <tr><td><code>--n-layer</code></td><td>4</td><td>Number of Transformer blocks.</td></tr>
+      <tr><td><code>--n-head</code></td><td>4</td><td>Attention heads per block. <code>--n-embd</code> must be divisible by it.</td></tr>
+      <tr><td><code>--n-embd</code></td><td>128</td><td>The width of the model.</td></tr>
+      <tr><td><code>--dropout</code></td><td>0.1</td><td>Dropout rate.</td></tr>
+      <tr><td><code>--device</code></td><td>auto</td><td><code>auto</code>, <code>cpu</code> or <code>cuda</code>. With <code>auto</code> it uses the GPU if Slurm gave you one.</td></tr>
+    </tbody>
+  </table></div>
+  <details class="file" open><summary><span class="file-name">train.sbatch</span><span class="file-meta">34 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/04_tinygpt/train.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/04_tinygpt/train.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+<span class="c1"># Exercise 4: train a tiny GPT on one GPU</span>
+<span class="c1">#</span>
+<span class="c1">#   cd 04_tinygpt &amp;&amp; mkdir -p logs &amp;&amp; sbatch train.sbatch</span>
+<span class="c1">#   tail -f logs/tinygpt-&lt;jobid&gt;.out          # watch the loss go down</span>
+<span class="c1">#</span>
+<span class="c1"># Afterwards:</span>
+<span class="c1">#   python sample.py --ckpt $WS_DIR/runs/tinygpt-&lt;jobid&gt;/ckpt.pt --prompt &quot;ROMEO:&quot;</span>
+<span class="c1">#</span>
+<span class="c1"># Things to try:</span>
+<span class="c1">#   A bigger model. Everything after the script name is passed on to Python:</span>
+<span class="c1">#     sbatch train.sbatch --n-layer 6 --n-embd 384</span>
+<span class="c1">#   A job that runs out of time. Is ckpt.pt still saved?</span>
+<span class="c1">#     sbatch --time=00:02:00 train.sbatch</span>
+<span class="c1">#</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">tinygpt</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_scads_lv_llm</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">6</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--gres</span>=<span class="sbv">gpu:1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--mem</span>=<span class="sbv">32G</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--time</span>=<span class="sbv">00:30:00</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--signal</span>=<span class="sbv">TERM@60</span>              <span class="c1"># send SIGTERM 60 s before the time limit, so we can save</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--output</span>=<span class="sbv">logs/%x-%j.out</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--error</span>=<span class="sbv">logs/%x-%j.err</span>
+
+<span class="nb">source</span><span class="w"> </span>../00_setup/setup_env.sh
+
+<span class="nb">export</span><span class="w"> </span><span class="nv">SRUN_CPUS_PER_TASK</span><span class="o">=</span><span class="nv">$SLURM_CPUS_PER_TASK</span>
+srun<span class="w"> </span>python<span class="w"> </span>-u<span class="w"> </span>train_tinygpt.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--data<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/data/input.txt&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--out<span class="w">  </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/runs/tinygpt-</span><span class="nv">$SLURM_JOB_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--steps<span class="w"> </span><span class="m">5000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="s2">&quot;</span><span class="nv">$@</span><span class="s2">&quot;</span></code></pre></figure></details>
+  <details class="file"><summary><span class="file-name">train_tinygpt.py</span><span class="file-meta">231 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/04_tinygpt/train_tinygpt.py</span><span class="code-lang">python</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/04_tinygpt/train_tinygpt.py">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Exercise 4: train a tiny character-level GPT as a batch job. It is the same</span>
+<span class="sd">model as in notebook &quot;5 - Attention and TinyGPT&quot;.</span>
+
+<span class="sd">    python train_tinygpt.py --data $WS_DIR/data/input.txt --steps 3000 --out $WS_DIR/runs/base</span>
+
+<span class="sd">It writes three files into --out:</span>
+<span class="sd">    ckpt.pt        the weights and the vocabulary (sample.py reads this)</span>
+<span class="sd">    metrics.json   final train and val loss, run time, settings (used in exercise 5)</span>
+<span class="sd">    samples.txt    some text written by the trained model</span>
+
+<span class="sd">A few cluster habits are built in: it uses the GPU if Slurm gave you one, it</span>
+<span class="sd">prints with flush=True so the log updates while the job runs, and it saves a</span>
+<span class="sd">checkpoint when Slurm sends SIGTERM (scancel or time limit).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">signal</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+
+
+<span class="c1"># ----------------------------------------------------------------------------- model</span>
+<span class="k">class</span> <span class="nc">CausalSelfAttention</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;softmax(Q K^T / sqrt(d_head) + causal mask) V, for n_head heads in parallel.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">dropout</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="n">n_embd</span> <span class="o">%</span> <span class="n">n_head</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_head</span> <span class="o">=</span> <span class="n">n_head</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qkv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">n_embd</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># Q, K, V in one matmul</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drop</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tril</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">block_size</span><span class="p">,</span> <span class="n">block_size</span><span class="p">))</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">block_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;mask&quot;</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qkv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># (B, T, C) -&gt; (B, n_head, T, head_size)</span>
+        <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_head</span><span class="p">,</span> <span class="n">C</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_head</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span>
+        <span class="n">att</span> <span class="o">=</span> <span class="p">(</span><span class="n">q</span> <span class="o">@</span> <span class="n">k</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>       <span class="c1"># (B, nh, T, T)</span>
+        <span class="n">att</span> <span class="o">=</span> <span class="n">att</span><span class="o">.</span><span class="n">masked_fill</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mask</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">T</span><span class="p">,</span> <span class="p">:</span><span class="n">T</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">))</span>  <span class="c1"># no peeking ahead</span>
+        <span class="n">att</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">att</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">att</span> <span class="o">@</span> <span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>     <span class="c1"># re-assemble heads</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proj</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+
+
+<span class="k">class</span> <span class="nc">Block</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Transformer block: communicate (attention) then compute (MLP), with residuals.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">dropout</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ln1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">n_embd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attn</span> <span class="o">=</span> <span class="n">CausalSelfAttention</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">dropout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ln2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">n_embd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mlp</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">n_embd</span><span class="p">),</span> <span class="n">nn</span><span class="o">.</span><span class="n">GELU</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">n_embd</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ln1</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mlp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ln2</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">x</span>
+
+
+<span class="k">class</span> <span class="nc">TinyGPT</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">n_layer</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_head</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_embd</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block_size</span> <span class="o">=</span> <span class="n">block_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tok_emb</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>     <span class="c1"># which character?</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos_emb</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">block_size</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>     <span class="c1"># at which position?</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">Block</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">dropout</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_layer</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ln_f</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">n_embd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm_head</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">)</span>        <span class="c1"># scores for the next character</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="n">idx</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">idx</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tok_emb</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_emb</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ln_f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blocks</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_head</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>                            <span class="c1"># (B, T, vocab)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">targets</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">logits</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)),</span> <span class="n">targets</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">logits</span><span class="p">,</span> <span class="n">loss</span>
+
+    <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_new_tokens</span><span class="p">):</span>
+            <span class="n">logits</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">idx</span><span class="p">[:,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">block_size</span><span class="p">:])</span>     <span class="c1"># crop to the context window</span>
+            <span class="n">logits</span> <span class="o">=</span> <span class="n">logits</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">/</span> <span class="n">temperature</span>          <span class="c1"># only the last position matters</span>
+            <span class="k">if</span> <span class="n">top_k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">v</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">top_k</span><span class="p">,</span> <span class="n">logits</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+                <span class="n">logits</span><span class="p">[</span><span class="n">logits</span> <span class="o">&lt;</span> <span class="n">v</span><span class="p">[:,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]]</span> <span class="o">=</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>
+            <span class="n">probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">idx</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">idx</span>
+
+
+<span class="c1"># ----------------------------------------------------------------------------- data</span>
+<span class="k">def</span> <span class="nf">load_text</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not find the data file &#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&#39;.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;   Download it (login node) with:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;   curl -sSL -o input.txt https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt&quot;</span>
+        <span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">get_batch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">device</span><span class="p">):</span>
+    <span class="n">ix</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="n">block_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,))</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="n">block_size</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ix</span><span class="p">])</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="n">block_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ix</span><span class="p">])</span>   <span class="c1"># the same, shifted by one</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">y</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+
+<span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">estimate_loss</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">splits</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">device</span><span class="p">):</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">splits</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">losses</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">eval_iters</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">eval_iters</span><span class="p">):</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">get_batch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">block_size</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+            <span class="n">losses</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">losses</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="c1"># ----------------------------------------------------------------------------- main</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">default_data</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;WS_DIR&quot;</span><span class="p">,</span> <span class="s2">&quot;.&quot;</span><span class="p">),</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="s2">&quot;input.txt&quot;</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="vm">__doc__</span><span class="p">,</span> <span class="n">formatter_class</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">RawDescriptionHelpFormatter</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--data&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default_data</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--out&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;runs/tinygpt&quot;</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--steps&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">3000</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lr&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--batch-size&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--block-size&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--n-layer&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--n-head&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--n-embd&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--dropout&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--eval-interval&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">250</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--eval-iters&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--seed&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1337</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--device&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;auto | cpu | cuda&quot;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span> <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">())</span> <span class="k">else</span>
+                          <span class="p">(</span><span class="s2">&quot;cpu&quot;</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span> <span class="k">else</span> <span class="n">args</span><span class="o">.</span><span class="n">device</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">device</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;cuda&quot;</span><span class="p">:</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">backends</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">matmul</span><span class="o">.</span><span class="n">allow_tf32</span> <span class="o">=</span> <span class="kc">True</span>     <span class="c1"># free speed-up on A100 / H100</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">out</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># --- data: characters -&gt; integers</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">load_text</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">chars</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+    <span class="n">stoi</span> <span class="o">=</span> <span class="p">{</span><span class="n">ch</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chars</span><span class="p">)}</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">stoi</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">text</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.9</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">splits</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;train&quot;</span><span class="p">:</span> <span class="n">data</span><span class="p">[:</span><span class="n">n</span><span class="p">],</span> <span class="s2">&quot;val&quot;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="n">n</span><span class="p">:]}</span>
+
+    <span class="c1"># --- model + optimiser</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">TinyGPT</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chars</span><span class="p">),</span> <span class="n">args</span><span class="o">.</span><span class="n">block_size</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">n_layer</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">n_head</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">dropout</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">optim</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">lr</span><span class="p">)</span>
+    <span class="n">n_params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;device=</span><span class="si">{</span><span class="n">device</span><span class="si">}</span><span class="s2">  vocab=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">chars</span><span class="p">)</span><span class="si">}</span><span class="s2">  chars=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">  params=</span><span class="si">{</span><span class="n">n_params</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e6</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">M  &quot;</span>
+          <span class="sa">f</span><span class="s2">&quot;job=</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;SLURM_JOB_ID&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;local&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># --- save a checkpoint before Slurm kills us</span>
+    <span class="n">stop</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;flag&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">on_sigterm</span><span class="p">(</span><span class="n">signum</span><span class="p">,</span> <span class="n">frame</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Got SIGTERM, saving a checkpoint and stopping&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">stop</span><span class="p">[</span><span class="s2">&quot;flag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGTERM</span><span class="p">,</span> <span class="n">on_sigterm</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">losses</span><span class="p">):</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">({</span><span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="s2">&quot;chars&quot;</span><span class="p">:</span> <span class="n">chars</span><span class="p">,</span> <span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="nb">vars</span><span class="p">(</span><span class="n">args</span><span class="p">),</span> <span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="n">step</span><span class="p">},</span>
+                   <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">out</span><span class="p">,</span> <span class="s2">&quot;ckpt.pt&quot;</span><span class="p">))</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">out</span><span class="p">,</span> <span class="s2">&quot;metrics.json&quot;</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">({</span><span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="n">step</span><span class="p">,</span> <span class="o">**</span><span class="n">losses</span><span class="p">,</span> <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">lr</span><span class="p">,</span> <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="n">n_params</span><span class="p">,</span>
+                       <span class="s2">&quot;seconds&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">device</span><span class="p">),</span>
+                       <span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;SLURM_JOB_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;local&quot;</span><span class="p">),</span>
+                       <span class="s2">&quot;array_task&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;SLURM_ARRAY_TASK_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)},</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="c1"># --- training loop: forward, loss, backward, update (the same as in notebook 3b)</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">losses</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;train&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">),</span> <span class="s2">&quot;val&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)}</span>
+    <span class="n">step</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">get_batch</span><span class="p">(</span><span class="n">splits</span><span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">],</span> <span class="n">args</span><span class="o">.</span><span class="n">block_size</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">optim</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">(</span><span class="n">set_to_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+        <span class="n">optim</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">step</span> <span class="o">%</span> <span class="n">args</span><span class="o">.</span><span class="n">eval_interval</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">step</span> <span class="o">==</span> <span class="n">args</span><span class="o">.</span><span class="n">steps</span> <span class="ow">or</span> <span class="n">stop</span><span class="p">[</span><span class="s2">&quot;flag&quot;</span><span class="p">]:</span>
+            <span class="n">losses</span> <span class="o">=</span> <span class="n">estimate_loss</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">splits</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+            <span class="n">tok_s</span> <span class="o">=</span> <span class="n">step</span> <span class="o">*</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">*</span> <span class="n">args</span><span class="o">.</span><span class="n">block_size</span> <span class="o">/</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;step </span><span class="si">{</span><span class="n">step</span><span class="si">:</span><span class="s2">5d</span><span class="si">}</span><span class="s2"> | train </span><span class="si">{</span><span class="n">losses</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> | val </span><span class="si">{</span><span class="n">losses</span><span class="p">[</span><span class="s1">&#39;val&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> | &quot;</span>
+                  <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tok_s</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e3</span><span class="si">:</span><span class="s2">7.1f</span><span class="si">}</span><span class="s2">k tok/s | </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">6.1f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">save</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">losses</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">stop</span><span class="p">[</span><span class="s2">&quot;flag&quot;</span><span class="p">]:</span>
+            <span class="k">break</span>
+
+    <span class="c1"># --- show what it learned</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([[</span><span class="n">stoi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">sample</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chars</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">out</span><span class="p">,</span> <span class="s2">&quot;samples.txt&quot;</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">sample</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;done: </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s2"> steps in </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s -&gt; </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">out</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span></code></pre></figure></details>
+  <details class="file"><summary><span class="file-name">sample.py</span><span class="file-meta">46 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/04_tinygpt/sample.py</span><span class="code-lang">python</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/04_tinygpt/sample.py">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Let a trained TinyGPT write some text.</span>
+
+<span class="sd">    python sample.py --ckpt $WS_DIR/runs/base/ckpt.pt --prompt &quot;ROMEO:&quot; --temperature 0.8</span>
+
+<span class="sd">Nice to try in an interactive session: change --temperature and --top-k and see</span>
+<span class="sd">what happens.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="kn">from</span> <span class="nn">train_tinygpt</span> <span class="kn">import</span> <span class="n">TinyGPT</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ckpt&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--prompt&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--tokens&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--temperature&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--top-k&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--seed&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+    <span class="n">ck</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ckpt</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">chars</span> <span class="o">=</span> <span class="n">ck</span><span class="p">[</span><span class="s2">&quot;args&quot;</span><span class="p">],</span> <span class="n">ck</span><span class="p">[</span><span class="s2">&quot;chars&quot;</span><span class="p">]</span>
+    <span class="n">stoi</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chars</span><span class="p">)}</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">TinyGPT</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chars</span><span class="p">),</span> <span class="n">a</span><span class="p">[</span><span class="s2">&quot;block_size&quot;</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="s2">&quot;n_layer&quot;</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="s2">&quot;n_head&quot;</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="s2">&quot;n_embd&quot;</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">ck</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">])</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+    <span class="n">unknown</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">prompt</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">chars</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(ignoring characters the model never saw: </span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+    <span class="n">ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">stoi</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">prompt</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">stoi</span><span class="p">]</span> <span class="ow">or</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">ids</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">),</span> <span class="n">args</span><span class="o">.</span><span class="n">tokens</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">top_k</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chars</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()))</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span></code></pre></figure></details>
+</section>
+
+<section class="ex" id="ex5">
+  <div class="ex-head"><div class="ex-num">5</div><div>
+    <h2 id="a-learning-rate-sweep-with-a-job-array">A learning-rate sweep with a job array<a class="anchor" href="#a-learning-rate-sweep-with-a-job-array" aria-label="Link to this section">#</a></h2>
+    <div class="meta-row"><span>05_sweep</span><span>Alpha or Capella</span><span>4 × 1 GPU</span><span>time limit 20 min each</span></div>
+  </div></div>
+  <p><strong>You practise:</strong> job arrays with <code>--array</code>, and jobs that wait for other jobs with <code>--dependency=afterok</code>.</p>
+  <p>Which learning rate is best for the tiny GPT? Instead of trying four values one after the other, you send one array job. Slurm starts the same script four times, each on its own GPU. The only thing that changes is <code>$SLURM_ARRAY_TASK_ID</code>, which goes from 0 to 3 and picks the learning rate. A second, tiny job waits until all four are done and prints a table.</p>
+<figure class="code "><figcaption><span class="code-title">run it</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/05_sweep
+mkdir<span class="w"> </span>-p<span class="w"> </span>logs
+<span class="nb">source</span><span class="w"> </span>../00_setup/setup_env.sh<span class="w">      </span><span class="c1"># so that $WS_DIR is set</span>
+./submit_sweep.sh<span class="w">                    </span><span class="c1"># sends the sweep and the summary job</span>
+squeue<span class="w"> </span>--me<span class="w">                          </span><span class="c1"># you will see &lt;jobid&gt;_0, &lt;jobid&gt;_1, ...</span></code></pre></figure>
+  <h3>What to look for</h3>
+  <ul>
+    <li><code>squeue</code> shows four tasks of one array, and the collect job waiting with the reason <em>Dependency</em>.</li>
+    <li>Each task writes its own log, <code>logs/lr-sweep-&lt;jobid&gt;_0.out</code> to <code>_3.out</code>.</li>
+    <li>When all are done, <code>logs/lr-collect-&lt;jobid&gt;.out</code> holds the result, best run first:</li>
+  </ul>
+<figure class="code output"><figcaption><span class="code-title">the shape of the result table</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">run                   lr   steps     train       val    secs  device
+lr-…               …e-03    2000    …         …          …    cuda
+
+best: lr-…  (val loss …)</code></pre></figure>
+  <div class="callout try"><p><strong>Try it.</strong> Cancel just one task of a running array with <code>scancel &lt;jobid&gt;_3</code>. What happens to the collect job now? Then change <code>--array=0-3</code> to <code>--array=0-3%2</code>, so that at most two tasks run at the same time. Or add more learning rates to the list <code>LEARNING_RATES</code> and make the array longer.</p></div>
+  <details class="file" open><summary><span class="file-name">submit_sweep.sh</span><span class="file-meta">18 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/05_sweep/submit_sweep.sh</span><span class="code-lang">shell</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/05_sweep/submit_sweep.sh">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+<span class="c1"># Exercise 5: send the array job, then a second job that waits for it.</span>
+<span class="c1">#</span>
+<span class="c1">#   source ../00_setup/setup_env.sh      # so that $WS_DIR is set</span>
+<span class="c1">#   mkdir -p logs &amp;&amp; ./submit_sweep.sh</span>
+<span class="nb">set</span><span class="w"> </span>-e
+:<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">WS_DIR</span><span class="p">:?run </span><span class="s1">&#39;source ../00_setup/setup_env.sh&#39;</span><span class="p"> first</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<span class="c1"># --parsable makes sbatch print only the job ID, so we can keep it in a variable</span>
+<span class="nv">SWEEP_ID</span><span class="o">=</span><span class="k">$(</span>sbatch<span class="w"> </span>--parsable<span class="w"> </span>sweep.sbatch<span class="k">)</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;sweep (array) job : </span><span class="nv">$SWEEP_ID</span><span class="s2">&quot;</span>
+
+<span class="nv">COLLECT_ID</span><span class="o">=</span><span class="k">$(</span>sbatch<span class="w"> </span>--parsable<span class="w"> </span>--dependency<span class="o">=</span>afterok:<span class="s2">&quot;</span><span class="nv">$SWEEP_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                    </span>--export<span class="o">=</span>ALL,SWEEP_ID<span class="o">=</span><span class="s2">&quot;</span><span class="nv">$SWEEP_ID</span><span class="s2">&quot;</span><span class="w"> </span>collect.sbatch<span class="k">)</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;collect job       : </span><span class="nv">$COLLECT_ID</span><span class="s2"> (waits for </span><span class="nv">$SWEEP_ID</span><span class="s2">, squeue shows it as Dependency)&quot;</span>
+<span class="nb">echo</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;watch with:  squeue --me&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;results in:  logs/lr-collect-</span><span class="nv">$COLLECT_ID</span><span class="s2">.out&quot;</span></code></pre></figure></details>
+  <details class="file" open><summary><span class="file-name">sweep.sbatch</span><span class="file-meta">33 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/05_sweep/sweep.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/05_sweep/sweep.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+<span class="c1"># Exercise 5: a learning-rate sweep as a job array</span>
+<span class="c1">#</span>
+<span class="c1">#   cd 05_sweep &amp;&amp; mkdir -p logs &amp;&amp; ./submit_sweep.sh     (sends the sweep and the summary job)</span>
+<span class="c1">#   squeue --me                     # you will see &lt;jobid&gt;_0, &lt;jobid&gt;_1, ...</span>
+<span class="c1">#   scancel &lt;jobid&gt;_3               # cancel just one task of the array</span>
+<span class="c1">#</span>
+<span class="c1"># Slurm starts this script 4 times. The only thing that changes is</span>
+<span class="c1"># $SLURM_ARRAY_TASK_ID, which goes from 0 to 3.</span>
+<span class="c1">#</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">lr-sweep</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_scads_lv_llm</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--array</span>=<span class="sbv">0-3</span>                   <span class="c1"># 4 tasks; with 0-3%2 at most 2 run at the same time</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">6</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--gres</span>=<span class="sbv">gpu:1</span>                  <span class="c1"># every task gets its own GPU</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--mem</span>=<span class="sbv">32G</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--time</span>=<span class="sbv">00:20:00</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--output</span>=<span class="sbv">logs/%x-%A_%a.out</span>    <span class="c1"># %A is the array job ID, %a the task number</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--error</span>=<span class="sbv">logs/%x-%A_%a.err</span>
+
+<span class="nv">LEARNING_RATES</span><span class="o">=(</span>3e-3<span class="w"> </span>1e-3<span class="w"> </span>3e-4<span class="w"> </span>1e-4<span class="o">)</span>
+<span class="nv">LR</span><span class="o">=</span><span class="si">${</span><span class="nv">LEARNING_RATES</span><span class="p">[</span><span class="nv">$SLURM_ARRAY_TASK_ID</span><span class="p">]</span><span class="si">}</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;array task </span><span class="nv">$SLURM_ARRAY_TASK_ID</span><span class="s2"> of job </span><span class="nv">$SLURM_ARRAY_JOB_ID</span><span class="s2"> uses lr=</span><span class="nv">$LR</span><span class="s2"> on </span><span class="k">$(</span>hostname<span class="k">)</span><span class="s2">&quot;</span>
+
+<span class="nb">source</span><span class="w"> </span>../00_setup/setup_env.sh
+
+<span class="nb">export</span><span class="w"> </span><span class="nv">SRUN_CPUS_PER_TASK</span><span class="o">=</span><span class="nv">$SLURM_CPUS_PER_TASK</span>
+srun<span class="w"> </span>python<span class="w"> </span>-u<span class="w"> </span>../04_tinygpt/train_tinygpt.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--data<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/data/input.txt&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--out<span class="w">  </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/runs/sweep-</span><span class="nv">$SLURM_ARRAY_JOB_ID</span><span class="s2">/lr-</span><span class="nv">$LR</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--steps<span class="w"> </span><span class="m">2000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--lr<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$LR</span><span class="s2">&quot;</span></code></pre></figure></details>
+  <details class="file"><summary><span class="file-name">collect.sbatch</span><span class="file-meta">16 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/05_sweep/collect.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/05_sweep/collect.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+<span class="c1"># Exercise 5: a tiny CPU job that prints the sweep results.</span>
+<span class="c1"># submit_sweep.sh sends it with --dependency=afterok:&lt;array job id&gt;,</span>
+<span class="c1"># so it only starts after all array tasks have finished without errors.</span>
+<span class="c1">#</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">lr-collect</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_scads_lv_llm</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--mem-per-cpu</span>=<span class="sbv">1G</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--time</span>=<span class="sbv">00:05:00</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--output</span>=<span class="sbv">logs/%x-%j.out</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--error</span>=<span class="sbv">logs/%x-%j.err</span>
+
+<span class="c1"># SWEEP_ID comes from submit_sweep.sh (sbatch --export=ALL,SWEEP_ID=...)</span>
+python3<span class="w"> </span>collect_results.py<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/runs/sweep-</span><span class="nv">$SWEEP_ID</span><span class="s2">&quot;</span></code></pre></figure></details>
+  <details class="file"><summary><span class="file-name">collect_results.py</span><span class="file-meta">36 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/05_sweep/collect_results.py</span><span class="code-lang">python</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/05_sweep/collect_results.py">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Exercise 5: print a small table of all runs in a sweep, best one first.</span>
+<span class="sd">It reads every metrics.json below the folder you give it.</span>
+
+<span class="sd">    python collect_results.py $WS_DIR/runs/sweep-1234567</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;.&quot;</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="s2">&quot;**&quot;</span><span class="p">,</span> <span class="s2">&quot;metrics.json&quot;</span><span class="p">),</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">m</span><span class="p">[</span><span class="s2">&quot;run&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+        <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">rows</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;no metrics.json found under </span><span class="si">{</span><span class="n">root</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">rows</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;run&#39;</span><span class="si">:</span><span class="s2">&lt;14</span><span class="si">}{</span><span class="s1">&#39;lr&#39;</span><span class="si">:</span><span class="s2">&gt;10</span><span class="si">}{</span><span class="s1">&#39;steps&#39;</span><span class="si">:</span><span class="s2">&gt;8</span><span class="si">}{</span><span class="s1">&#39;train&#39;</span><span class="si">:</span><span class="s2">&gt;10</span><span class="si">}{</span><span class="s1">&#39;val&#39;</span><span class="si">:</span><span class="s2">&gt;10</span><span class="si">}{</span><span class="s1">&#39;secs&#39;</span><span class="si">:</span><span class="s2">&gt;8</span><span class="si">}</span><span class="s2">  device&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;run&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;14</span><span class="si">}{</span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;lr&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;10.0e</span><span class="si">}{</span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;step&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;8</span><span class="si">}{</span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;10.4f</span><span class="si">}{</span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;val&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;10.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+              <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;seconds&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;8.0f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;device&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">best</span> <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">best: </span><span class="si">{</span><span class="n">best</span><span class="p">[</span><span class="s1">&#39;run&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">  (val loss </span><span class="si">{</span><span class="n">best</span><span class="p">[</span><span class="s1">&#39;val&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span></code></pre></figure></details>
+</section>
+
+<section class="ex" id="ex6">
+  <div class="ex-head"><div class="ex-num">6</div><div>
+    <h2 id="run-a-pretrained-llm">Run a pretrained LLM<a class="anchor" href="#run-a-pretrained-llm" aria-label="Link to this section">#</a></h2>
+    <div class="meta-row"><span>06_hf_generate</span><span>Alpha or Capella</span><span>1 GPU</span><span>time limit 15 min</span></div>
+  </div></div>
+  <p><strong>You practise:</strong> getting a model from Hugging Face into your workspace, and running it over a whole file of prompts as a GPU job.</p>
+  <p>The model is <code>Qwen/Qwen2.5-0.5B-Instruct</code>. It has 0.5 billion parameters, speaks many languages and needs about 1 GB of GPU memory. First you download it once on the login node. Then the job loads it from your workspace and answers every line of <code>prompts.txt</code>.</p>
+<figure class="code "><figcaption><span class="code-title">run it</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/06_hf_generate
+<span class="nb">source</span><span class="w"> </span>../00_setup/setup_env.sh
+python<span class="w"> </span>generate.py<span class="w"> </span>--download-only<span class="w">        </span><span class="c1"># on the login node, fetches the model once</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sbatch<span class="w"> </span>generate.sbatch
+cat<span class="w"> </span>logs/hf-generate-&lt;jobid&gt;.out</code></pre></figure>
+  <h3>What to look for in the log</h3>
+  <ul>
+    <li><code>HF_HOME</code> points into your workspace, not into your home folder.</li>
+    <li>The model line shows the number of parameters, <code>cuda</code> and <code>torch.bfloat16</code>.</li>
+    <li>Every prompt is printed with its answer. The answers are also saved as <code>outputs-&lt;jobid&gt;.jsonl</code>, one JSON object per line.</li>
+    <li>The last line gives the speed in new tokens per second. Compare it with the same model in <a href="notebooks/6-pretrained-llms-for-text-analysis.html">notebook 6</a> on Colab.</li>
+  </ul>
+  <div class="callout try"><p><strong>Try it.</strong> Do the German and Hindi prompts get answers in the same language? Add your own lines to <code>prompts.txt</code>. Change <code>--temperature</code> or <code>--max-new-tokens</code>. Or try another model. The job runs offline, so download the model first:</p>
+<figure class="code "><figcaption><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">python<span class="w"> </span>generate.py<span class="w"> </span>--download-only<span class="w"> </span>--model<span class="w"> </span>gpt2
+sbatch<span class="w"> </span>generate.sbatch<span class="w"> </span>--model<span class="w"> </span>gpt2</code></pre></figure>
+  <p>GPT-2 only knows English and has no chat format, so it simply continues your text. For CPU against GPU, copy the job script, remove the <code>--gres</code> line and ask for more CPU cores.</p></div>
+  <details class="file" open><summary><span class="file-name">generate.sbatch</span><span class="file-meta">27 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/06_hf_generate/generate.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/06_hf_generate/generate.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+<span class="c1"># Exercise 6: let a pretrained language model answer a file of prompts</span>
+<span class="c1">#</span>
+<span class="c1">#   source ../00_setup/setup_env.sh</span>
+<span class="c1">#   python generate.py --download-only        # on the login node, fetches the model once</span>
+<span class="c1">#   mkdir -p logs &amp;&amp; sbatch generate.sbatch</span>
+<span class="c1">#</span>
+<span class="c1"># Things to try:</span>
+<span class="c1">#   Another model:   sbatch generate.sbatch --model gpt2</span>
+<span class="c1">#   CPU vs GPU:      copy this file, remove the --gres line, ask for more CPUs</span>
+<span class="c1">#   Languages:       do the German and Hindi prompts get answers in the same language?</span>
+<span class="c1">#</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">hf-generate</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_scads_lv_llm</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">6</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--gres</span>=<span class="sbv">gpu:1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--mem</span>=<span class="sbv">32G</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--time</span>=<span class="sbv">00:15:00</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--output</span>=<span class="sbv">logs/%x-%j.out</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--error</span>=<span class="sbv">logs/%x-%j.err</span>
+
+<span class="nb">source</span><span class="w"> </span>../00_setup/setup_env.sh
+<span class="nb">export</span><span class="w"> </span><span class="nv">HF_HUB_OFFLINE</span><span class="o">=</span><span class="m">1</span><span class="w">               </span><span class="c1"># use the downloaded copy, don&#39;t wait for the network</span>
+
+<span class="nb">export</span><span class="w"> </span><span class="nv">SRUN_CPUS_PER_TASK</span><span class="o">=</span><span class="nv">$SLURM_CPUS_PER_TASK</span>
+srun<span class="w"> </span>python<span class="w"> </span>-u<span class="w"> </span>generate.py<span class="w"> </span>--out<span class="w"> </span><span class="s2">&quot;outputs-</span><span class="nv">$SLURM_JOB_ID</span><span class="s2">.jsonl&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$@</span><span class="s2">&quot;</span></code></pre></figure></details>
+  <details class="file"><summary><span class="file-name">generate.py</span><span class="file-meta">87 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/06_hf_generate/generate.py</span><span class="code-lang">python</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/06_hf_generate/generate.py">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Exercise 6: run a small pretrained language model from Hugging Face on a GPU node.</span>
+
+<span class="sd">    # 1) on the login node: download the model once into $HF_HOME (in your workspace)</span>
+<span class="sd">    python generate.py --download-only</span>
+
+<span class="sd">    # 2) as a GPU job: answer every line of prompts.txt</span>
+<span class="sd">    sbatch generate.sbatch</span>
+
+<span class="sd">The default model is Qwen/Qwen2.5-0.5B-Instruct. It has 0.5 billion parameters,</span>
+<span class="sd">speaks many languages and needs about 1 GB in bf16. You can also try --model gpt2,</span>
+<span class="sd">which only knows English and has no chat template.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
+
+
+<span class="k">def</span> <span class="nf">build_inputs</span><span class="p">(</span><span class="n">tok</span><span class="p">,</span> <span class="n">prompts</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Instruct models expect their chat format; base models just get the raw text.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tok</span><span class="p">,</span> <span class="s2">&quot;chat_template&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">tok</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">([{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">p</span><span class="p">}],</span> <span class="n">tokenize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                        <span class="n">add_generation_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">prompts</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">prompts</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--model&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--prompts&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;prompts.txt&quot;</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--out&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;outputs.jsonl&quot;</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max-new-tokens&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">120</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--temperature&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--top-p&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--batch-size&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--download-only&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;HF_HOME = </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;HF_HOME&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;~/.cache/huggingface (careful: $HOME quota!)&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">download_only</span><span class="p">:</span>                    <span class="c1"># only fetch the files, do not load the model</span>
+        <span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">snapshot_download</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">snapshot_download</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;downloaded </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">model</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">. Now submit the GPU job.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="n">tok</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+
+    <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">device</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;cuda&quot;</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float32</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="n">n_params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;model </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">model</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">n_params</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e6</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">M params on </span><span class="si">{</span><span class="n">device</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">tok</span><span class="o">.</span><span class="n">padding_side</span> <span class="o">=</span> <span class="s2">&quot;left&quot;</span>                 <span class="c1"># decoder-only models: pad on the left for batching</span>
+    <span class="k">if</span> <span class="n">tok</span><span class="o">.</span><span class="n">pad_token</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">tok</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tok</span><span class="o">.</span><span class="n">eos_token</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">prompts</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">prompts</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">)]</span>
+
+    <span class="n">n_new_total</span><span class="p">,</span> <span class="n">t0</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">out</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fout</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompts</span><span class="p">),</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+            <span class="n">batch</span> <span class="o">=</span> <span class="n">prompts</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">]</span>
+            <span class="n">enc</span> <span class="o">=</span> <span class="n">tok</span><span class="p">(</span><span class="n">build_inputs</span><span class="p">(</span><span class="n">tok</span><span class="p">,</span> <span class="n">batch</span><span class="p">),</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+            <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">enc</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">max_new_tokens</span><span class="p">,</span> <span class="n">do_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                     <span class="n">temperature</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span> <span class="n">top_p</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">top_p</span><span class="p">,</span>
+                                     <span class="n">pad_token_id</span><span class="o">=</span><span class="n">tok</span><span class="o">.</span><span class="n">pad_token_id</span><span class="p">)</span>
+            <span class="n">new_tokens</span> <span class="o">=</span> <span class="n">out</span><span class="p">[:,</span> <span class="n">enc</span><span class="p">[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:]</span>          <span class="c1"># drop the prompt part</span>
+            <span class="k">for</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">ids</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">new_tokens</span><span class="p">):</span>
+                <span class="n">answer</span> <span class="o">=</span> <span class="n">tok</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">n_new_total</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">((</span><span class="n">ids</span> <span class="o">!=</span> <span class="n">tok</span><span class="o">.</span><span class="n">pad_token_id</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+                <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="n">prompt</span><span class="p">,</span> <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="n">answer</span><span class="p">},</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&gt;&gt;&gt; </span><span class="si">{</span><span class="n">prompt</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">answer</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">prompts</span><span class="p">)</span><span class="si">}</span><span class="s2"> prompts, </span><span class="si">{</span><span class="n">n_new_total</span><span class="si">}</span><span class="s2"> new tokens in </span><span class="si">{</span><span class="n">dt</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s &quot;</span>
+          <span class="sa">f</span><span class="s2">&quot;-&gt; </span><span class="si">{</span><span class="n">n_new_total</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">dt</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> tokens/s  (written to </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">out</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span></code></pre></figure></details>
+  <details class="file"><summary><span class="file-name">prompts.txt</span><span class="file-meta">9 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/06_hf_generate/prompts.txt</span><span class="code-lang">txt</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/06_hf_generate/prompts.txt">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"># one prompt per line; lines starting with # are ignored
+Explain in two sentences what a GPU is good for.
+What is the capital of Saxony, and what is it famous for?
+Write a haiku about a supercomputer that is waiting in a queue.
+Erkläre in zwei Sätzen, was ein Sprachmodell ist.
+एक वाक्य में बताइए कि कृत्रिम बुद्धिमत्ता क्या है।
+Translate to French: &quot;The job was cancelled because it ran out of time.&quot;
+A train leaves Dresden at 9:15 and arrives in Berlin at 11:05. How long is the trip?
+List three risks of large language models.</code></pre></figure></details>
+</section>
+
+<h2 id="and-now-your-own-job">And now your own job<a class="anchor" href="#and-now-your-own-job" aria-label="Link to this section">#</a></h2>
+<p>You have used every building block there is: a job script, a GPU, the workspace, checkpoints, arrays and dependencies, and a model from Hugging Face. The <a href="setup.html#your-own-experiments">Setup page</a> has a generator that writes the job script for your own experiment. All commands in one place are on the <a href="cheatsheet.html">cheat sheet</a>.</p>
+</article><aside class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#how-every-exercise-works">How every exercise works</a></li><li><a href="#your-first-batch-job">Your first batch job</a></li><li><a href="#watch-a-job-then-cancel-it">Watch a job, then cancel it</a></li><li><a href="#ask-for-a-gpu-and-measure-it">Ask for a GPU and measure it</a></li><li><a href="#train-a-tiny-gpt">Train a tiny GPT</a></li><li><a href="#a-learning-rate-sweep-with-a-job-array">A learning-rate sweep with a job array</a></li><li><a href="#run-a-pretrained-llm">Run a pretrained LLM</a></li><li><a href="#and-now-your-own-job">And now your own job</a></li></ol></aside></div><nav class="pager wrap" aria-label="Previous and next page"><a class="pager-prev" href="setup.html"><span>Previous</span>Setup</a><a class="pager-next" href="crash-course.html"><span>Next</span>Crash course</a></nav>
+</main>
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div>
+      <p class="foot-title"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="5" y="12" width="22" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11 16 4l11 7" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="19.5" r="2.4" fill="var(--amber)"/></svg> Behind the Secrets of LLMs</p>
+      <p>Lab material for the course <em>Behind the Secrets of Large Language Models</em> at TU Dresden (ScaDS.AI).</p>
+      <p class="foot-small">This site loads no trackers, no web fonts and no scripts from other servers. It is built from the repository with <code>website/build.py</code>.</p>
+    </div>
+    <div>
+      <p class="foot-head">The material</p>
+      <a href="https://github.com/himanshubeniwal/behind-llms-lab">GitHub repository</a>
+      <a href="https://github.com/himanshubeniwal/behind-llms-lab/archive/refs/heads/main.zip">Download everything (.zip)</a>
+      <a href="notebooks.html">Notebooks</a>
+      <a href="lab.html">HPC lab</a>
+    </div>
+    <div>
+      <p class="foot-head">Help with the cluster</p>
+      <a href="https://compendium.hpc.tu-dresden.de">ZIH HPC Compendium</a>
+      <a href="https://jupyterhub.hpc.tu-dresden.de">JupyterHub</a>
+      <a href="mailto:hpc-support@tu-dresden.de">hpc-support@tu-dresden.de</a>
+      <a href="cheatsheet.html">Cheat sheet</a>
+    </div>
+  </div>
+</footer>
+<script src="assets/site.js?v=f01bcb2a" defer></script>
+</body>
+</html>

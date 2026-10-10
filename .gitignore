@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+logs/
+*.out
+*.err
+checkpoint-*.json
+outputs*.jsonl
+runs/
+.ipynb_checkpoints/
+input.txt
+.DS_Store
+.claude/

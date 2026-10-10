@@ -1,0 +1,189 @@
+<!--
+title: Behind the Secrets of LLMs
+layout: home
+description: Lab material for the course Behind the Secrets of Large Language Models at TU Dresden. Log in to a GPU cluster, train a tiny GPT from scratch and look inside real language models.
+-->
+<section class="hero">
+  <div class="wrap hero-in">
+    <div>
+      <p class="eyebrow">Session 01 · the lab kit</p>
+      <h1>Behind the Secrets of <em>LLMs</em></h1>
+      <p class="lead">A language model is often called a black box. In this lab you open it. You log in to a supercomputer, train a tiny GPT from scratch, and take real language models apart, one small script at a time.</p>
+      <div class="btn-row">
+        <a class="btn btn-primary btn-lg" href="clusters.html">Start here: meet the machines</a>
+        <a class="btn btn-lg" href="lab.html">Jump to the HPC lab</a>
+      </div>
+      <p class="hero-note">Course at TU Dresden (ScaDS.AI). Everything on this page is in <a href="{{repo}}">one GitHub repository</a>.</p>
+    </div>
+
+    <div class="bb" data-open="false">
+      <div class="bb-row">
+        <div class="bb-col">
+          <p class="bb-label">text in</p>
+          <div class="bb-chips"><span>The</span><span>cat</span><span>sat</span><span>on</span><span>the</span></div>
+        </div>
+        <div class="bb-arrow" aria-hidden="true">→</div>
+        <div class="bb-box">
+          <div class="bb-inside">
+            <div class="bb-layer">token + position embedding</div>
+            <div class="bb-layer block"><i>N BLOCKS</i><span>self-attention</span><span>MLP</span></div>
+            <div class="bb-layer">logits → softmax</div>
+          </div>
+          <div class="bb-shell"><div><b>?</b><small>black box</small></div></div>
+        </div>
+        <div class="bb-arrow" aria-hidden="true">→</div>
+        <div class="bb-col">
+          <p class="bb-label">next token</p>
+          <div class="bb-bars">
+            <div class="bb-bar" style="--p:.43"><span>mat</span><i></i><b>43%</b></div>
+            <div class="bb-bar" style="--p:.17"><span>floor</span><i></i><b>17%</b></div>
+            <div class="bb-bar" style="--p:.12"><span>couch</span><i></i><b>12%</b></div>
+            <div class="bb-bar" style="--p:.10"><span>bed</span><i></i><b>10%</b></div>
+            <div class="bb-bar" style="--p:.07"><span>sofa</span><i></i><b>7%</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="bb-foot">
+        <p>Text goes in, a probability for every possible next token comes out. The numbers here are only an illustration.</p>
+        <button class="btn btn-primary" type="button" data-bb-toggle aria-pressed="false">Open the box</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="stats">
+  <div><b>5</b><span>clusters at ZIH, 2 of them full of GPUs</span></div>
+  <div><b>7</b><span>lab exercises, from “hello” to a real LLM</span></div>
+  <div><b>3</b><span>notebooks that build a language model from scratch</span></div>
+  <div><b>0.8 M</b><span>parameters in the GPT you train yourself</span></div>
+</div>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">What this is</p>
+      <h2>Two parts, one story</h2>
+      <p>First you learn to drive the machine. Then you use it to build the thing everybody talks about, and you see that there is no magic inside.</p>
+    </div>
+    <div class="grid two">
+      <a class="card part c-cyan" href="lab.html">
+        <p class="eyebrow">Part 1 · on the cluster</p>
+        <h3>The HPC lab</h3>
+        <p>You log in to the ZIH clusters, send your first Slurm jobs, get a GPU, train a tiny GPT and run a real language model. Every exercise is one folder with a small Python script and the job script that runs it.</p>
+        <ul>
+          <li>your first batch job, and how to cancel one</li>
+          <li>one GPU, and how much faster it is than a CPU</li>
+          <li>a learning-rate sweep with a job array</li>
+          <li>a pretrained LLM that answers a file of prompts</li>
+        </ul>
+        <span class="more">Open the 7 exercises →</span>
+      </a>
+      <a class="card part c-amber" href="notebooks.html">
+        <p class="eyebrow">Part 2 · in a notebook</p>
+        <h3>The crash course</h3>
+        <p>Three notebooks that build a language model from scratch and then look inside real ones. They run in Google Colab and need no big GPU.</p>
+        <ul>
+          <li>tokens, a small BPE and a model that only counts</li>
+          <li>self-attention, a Transformer block and a tiny GPT</li>
+          <li>perplexity, surprisal, zero-shot labels and embeddings</li>
+          <li>exercises at the end of every notebook</li>
+        </ul>
+        <span class="more">Open the 3 notebooks →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">The first session</p>
+      <h2>Follow the path</h2>
+      <p>The pages are in the order you need them. If you are new to all of this, go from 1 to 6. If you only need a command, the cheat sheet has it.</p>
+    </div>
+    <ol class="path">
+      <li><a href="clusters.html"><h3>Meet the machines</h3><p>What a cluster is, which five ZIH has, and which ones we use.</p><small>read first</small></a></li>
+      <li><a href="setup.html"><h3>Get set up</h3><p>Log in, get the lab kit, and build your Python environment once.</p><small>do once · the install takes about 10 min</small></a></li>
+      <li><a href="lab.html"><h3>Do the HPC lab</h3><p>Seven exercises with all the code, from a hello job to a real LLM.</p><small>do · the main part of the session</small></a></li>
+      <li><a href="crash-course.html"><h3>Take the crash course</h3><p>From fitting a line to a Transformer, with things to play with.</p><small>read and play</small></a></li>
+      <li><a href="notebooks.html"><h3>Run the notebooks</h3><p>Build a bigram model and a tiny GPT, then use pretrained models.</p><small>do · 45 to 60 min each</small></a></li>
+      <li><a href="black-box.html"><h3>Open the black box</h3><p>What you can see inside a model, and what stays hard to explain.</p><small>read last</small></a></li>
+    </ol>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Quick start</p>
+      <h2>Three ways in</h2>
+      <p>Pick where you want to work. The cluster needs the university network or the VPN, and your ZIH login.</p>
+    </div>
+    <div class="tabs" data-tabs>
+      <div class="tab-list" role="tablist" aria-label="Where do you want to work?">
+        <button role="tab" id="tab-cluster" aria-controls="panel-cluster" aria-selected="true">On the cluster</button>
+        <button role="tab" id="tab-colab" aria-controls="panel-colab" aria-selected="false">In Google Colab</button>
+        <button role="tab" id="tab-laptop" aria-controls="panel-laptop" aria-selected="false">On your laptop</button>
+      </div>
+      <div class="tab-panel" role="tabpanel" id="panel-cluster" aria-labelledby="tab-cluster">
+        <p>Log in to a GPU cluster and get the lab kit. Then continue with <a href="setup.html">Setup</a>.</p>
+<x-code lang="bash" title="on your computer, then on the login node">
+ssh <zih-login>@login1.alpha.hpc.tu-dresden.de
+git clone {{clone}}
+cd behind-llms-lab/hpc_lab
+</x-code>
+      </div>
+      <div class="tab-panel" role="tabpanel" id="panel-colab" aria-labelledby="tab-colab" hidden>
+        <p>Open a notebook with one click on the <a href="notebooks.html">Notebooks</a> page. Or, inside Colab: <strong>File &gt; Open notebook &gt; GitHub</strong>, paste <code>himanshubeniwal/behind-llms-lab</code> and pick a notebook.</p>
+        <p>For notebooks 5 and 6, switch to a T4 GPU under <strong>Runtime &gt; Change runtime type</strong>. Notebook 4 is fine on a CPU.</p>
+      </div>
+      <div class="tab-panel" role="tabpanel" id="panel-laptop" aria-labelledby="tab-laptop" hidden>
+        <p>The notebooks and the scripts also run on a normal laptop, only slower. You need a recent Python 3 (the cluster uses 3.12).</p>
+<x-code lang="bash" title="on your computer">
+git clone {{clone}}
+cd behind-llms-lab
+python3 -m venv .venv && source .venv/bin/activate
+pip install torch numpy matplotlib tqdm transformers accelerate jupyter
+jupyter lab notebooks/
+</x-code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">The repository</p>
+      <h2>What is in the kit</h2>
+      <p>Clone it, <a href="{{zip}}">download it as a .zip</a>, or read every file right here on the site.</p>
+    </div>
+<pre class="tree"><a href="lab.html">hpc_lab/</a>
+  <a href="setup.html#the-setup-script">00_setup/</a>        <span>workspace, modules and a venv in one script</span>
+  <a href="lab.html#ex1">01_hello/</a>        <span>your first batch job</span>
+  <a href="lab.html#ex2">02_cancel/</a>       <span>squeue, scontrol, scancel, sacct</span>
+  <a href="lab.html#ex3">03_gpu/</a>          <span>ask for a GPU and measure it</span>
+  <a href="lab.html#ex4">04_tinygpt/</a>      <span>train a tiny GPT as a batch job</span>
+  <a href="lab.html#ex5">05_sweep/</a>        <span>a learning-rate sweep with a job array</span>
+  <a href="lab.html#ex6">06_hf_generate/</a>  <span>run a pretrained LLM on a GPU node</span>
+<a href="notebooks.html">notebooks/</a>
+  <a href="notebooks/4-tokens-and-bigram-lm.html">4 - Tokens and Bigram LM.ipynb</a>
+  <a href="notebooks/5-attention-and-tinygpt.html">5 - Attention and TinyGPT.ipynb</a>
+  <a href="notebooks/6-pretrained-llms-for-text-analysis.html">6 - Pretrained LLMs for Text Analysis.ipynb</a>
+<span>website/           the source of this site (python website/build.py)</span></pre>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">When you are stuck</p>
+      <h2>Help is close</h2>
+    </div>
+    <div class="grid three">
+      <a class="card c-amber" href="cheatsheet.html#when-something-goes-wrong"><h3>Something went wrong</h3><p>No log file, no GPU, a full home folder, a job that waits forever. The usual causes and the fix for each.</p><span class="more">Troubleshooting →</span></a>
+      <a class="card c-cyan" href="https://compendium.hpc.tu-dresden.de"><h3>ZIH HPC Compendium</h3><p>The official documentation of the clusters: hardware, Slurm, workspaces, software modules, JupyterHub.</p><span class="more">compendium.hpc.tu-dresden.de →</span></a>
+      <a class="card c-violet" href="mailto:hpc-support@tu-dresden.de"><h3>HPC support</h3><p>For questions about the cluster itself that the documentation does not answer.</p><span class="more">hpc-support@tu-dresden.de →</span></a>
+    </div>
+  </div>
+</section>

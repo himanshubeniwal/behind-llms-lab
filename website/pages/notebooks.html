@@ -1,0 +1,25 @@
+<!--
+title: The notebooks
+eyebrow: Step 5 · build it yourself
+lead: Three notebooks that build a language model from scratch and then look inside real ones. Read them here with all outputs, or open them in Google Colab and run every cell yourself. They need no big GPU.
+description: The three crash course notebooks: tokens and a bigram language model, self-attention and a tiny GPT, and pretrained LLMs for text analysis. Read them online or open them in Colab.
+toc: no
+-->
+<x-notebooks/>
+
+<h2>How to run them</h2>
+<div class="grid three">
+  <div class="card c-amber"><p class="eyebrow">nothing to install</p><h3>Google Colab</h3><p>Press <strong>Open in Colab</strong> on a notebook. For notebooks 5 and 6, switch to a T4 GPU under Runtime &gt; Change runtime type. Notebook 4 is fine on a CPU. You need a Google account.</p></div>
+  <div class="card c-cyan"><p class="eyebrow">on the cluster</p><h3>JupyterHub</h3><p>After the <a href="setup.html">setup</a>, open <a href="https://jupyterhub.hpc.tu-dresden.de">jupyterhub.hpc.tu-dresden.de</a>, start a server and choose the kernel <em>LLM Lab (venv-llm)</em>. The notebooks are in <code>~/behind-llms-lab/notebooks</code>.</p></div>
+  <div class="card c-violet"><p class="eyebrow">offline</p><h3>Your laptop</h3><p>Clone the repository and install <code>torch transformers matplotlib jupyter</code>. Without a GPU the notebooks choose smaller settings by themselves.</p></div>
+</div>
+
+<h2>How they fit together</h2>
+<p>Each notebook starts where the one before stopped, and each ends with exercises.</p>
+<ol class="pipeline">
+  <li data-n="4"><b>Tokens and a bigram language model</b><span>Text becomes numbers. A model that only counts which character follows which reaches a loss of about 2.5. You meet cross-entropy, perplexity and the temperature.</span></li>
+  <li data-n="5"><b>Self-attention and a tiny GPT</b><span>Every position may look at all earlier ones. Same data, same loss, same training loop, and much better text. Then you look at what the attention heads learned.</span></li>
+  <li data-n="6"><b>Pretrained LLMs for text analysis</b><span>Real models from Hugging Face, used as measuring tools: tokenizers across languages, perplexity, surprisal, zero-shot labels and sentence embeddings.</span></li>
+</ol>
+<p>They follow the warm-up notebooks 0 to 3b from the first crash course (regression, arbitrary functions, MNIST, autograd and neurons). If those ideas are new to you, read the <a href="crash-course.html">crash course page</a> first.</p>
+<div class="callout tip"><p><strong>The same model runs on the cluster.</strong> The tiny GPT of notebook 5 is <a href="lab.html#ex4">exercise 4</a> of the HPC lab, and the chat model at the end of notebook 6 is <a href="lab.html#ex6">exercise 6</a>. On an A100 or H100 you can train a model ten times bigger in the same time.</p></div>

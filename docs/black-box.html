@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opening the black box · Behind the Secrets of LLMs</title>
+<meta name="description" content="What it means that a large language model is a black box, what you can observe inside a model with the tools from this course, and what remains hard to explain.">
+<meta property="og:title" content="Opening the black box · Behind the Secrets of LLMs">
+<meta property="og:description" content="What it means that a large language model is a black box, what you can observe inside a model with the tools from this course, and what remains hard to explain.">
+<meta property="og:type" content="website">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css?v=f01bcb2a">
+<script>(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t}catch(e){}})()</script>
+</head>
+<body class="page-black-box">
+<a class="skip" href="#main">Skip to the content</a>
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="index.html"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="5" y="12" width="22" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11 16 4l11 7" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="19.5" r="2.4" fill="var(--amber)"/></svg><span class="brand-text"><b>Behind the Secrets of LLMs</b><i>lab</i></span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav">Menu</button>
+    <nav id="nav" class="nav" aria-label="Main"><a href="index.html">Overview</a><a href="clusters.html">Clusters</a><a href="setup.html">Setup</a><a href="lab.html">HPC lab</a><a href="crash-course.html">Crash course</a><a href="notebooks.html">Notebooks</a><a href="black-box.html" aria-current="page">Black box</a><a href="cheatsheet.html">Cheat sheet</a></nav>
+    <div class="top-tools">
+      <a class="icon-btn" href="https://github.com/himanshubeniwal/behind-llms-lab" aria-label="The repository on GitHub" title="GitHub repository"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg></a>
+      <button class="icon-btn theme-toggle" type="button" aria-label="Switch between dark and light" title="Dark or light"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 0 18V3Z"/><circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+    </div>
+  </div>
+</header>
+<main id="main">
+<header class="page-hero"><div class="wrap"><p class="eyebrow">Step 6 · behind the secrets</p><h1>Opening the black box</h1><p class="lead">People call language models black boxes. That is half true. For an open model you can read every single number inside it. What is hard is saying what those numbers mean. This page sorts out what you can see, how to look, and where the open questions start.</p></div></header><div class="wrap layout has-toc"><article class="prose">
+<h2 id="two-different-black-boxes">Two different black boxes<a class="anchor" href="#two-different-black-boxes" aria-label="Link to this section">#</a></h2>
+<p class="lede">The phrase is used for two things that have little to do with each other. It helps to keep them apart.</p>
+<div class="compare">
+  <div class="card"><h3><span class="swatch black"></span>A box you cannot open</h3><p>Many commercial models are only reachable through a website or an API. You send text and get text back. The weights stay with the company. All you can study is behaviour: what comes out for what goes in.</p></div>
+  <div class="card"><h3><span class="swatch glass"></span>A box you can open but not read</h3><p>For open models such as GPT-2 or Qwen you can download every parameter. Nothing is hidden. But half a billion numbers are not an explanation. Knowing all the weights does not tell you why the model wrote this word and not another.</p></div>
+</div>
+<p>This course works with the second kind. Every model you touch here is open: the bigram table, the tiny GPT you train yourself, GPT-2 and Qwen. So the question is never “what is inside?”. It is “how do I look at it so that I learn something?”.</p>
+
+<h2 id="what-happens-between-text-in-and-text-out">What happens between text in and text out<a class="anchor" href="#what-happens-between-text-in-and-text-out" aria-label="Link to this section">#</a></h2>
+<p>Each stage of the model produces something you can print and plot. None of it is secret.</p>
+<ol class="pipeline">
+  <li data-n="1"><b>Text becomes tokens</b><span>You can see: exactly how your text was cut up, and how many tokens it costs. <a href="notebooks/6-pretrained-llms-for-text-analysis.html">Notebook 6</a>, sections 1 and 2.</span></li>
+  <li data-n="2"><b>Tokens become vectors</b><span>You can see: the embedding table, one learned vector per token. In notebook 4 the whole model is this one table.</span></li>
+  <li data-n="3"><b>Attention moves information between positions</b><span>You can see: the attention weights of every head, as a picture of who looks at whom. <a href="notebooks/5-attention-and-tinygpt.html">Notebook 5</a>, section 6.</span></li>
+  <li data-n="4"><b>The blocks rewrite the vectors, layer after layer</b><span>You can see: every intermediate vector. They are just long lists of numbers, and this is where reading them gets hard.</span></li>
+  <li data-n="5"><b>The last layer gives a probability for every next token</b><span>You can see: the full distribution, not only the winner. Notebook 6, section 3.</span></li>
+  <li data-n="6"><b>One token is picked</b><span>You can see and control: temperature, top-k, top-p. This step is random on purpose, and it is not part of the model at all.</span></li>
+</ol>
+
+<h2 id="six-windows-you-open-in-this-course">Six windows you open in this course<a class="anchor" href="#six-windows-you-open-in-this-course" aria-label="Link to this section">#</a></h2>
+<div class="grid three">
+  <div class="card c-amber"><p class="eyebrow">Notebook 6 · sections 1, 2</p><h3>The tokenizer</h3><p>Before the model sees anything, the text is cut into pieces. For English that is little more than one token per word. For other languages it can be several times more, which makes them more expensive and leaves less room in the context.</p></div>
+  <div class="card c-amber"><p class="eyebrow">Notebook 6 · section 3</p><h3>Next-token probabilities</h3><p>Ask the model for its ten most likely continuations of a prompt. You see what it considers plausible, how sure it is, and which alternatives it nearly chose.</p></div>
+  <div class="card c-amber"><p class="eyebrow">Notebook 6 · section 6</p><h3>Surprisal</h3><p>For every token of a given text, how surprised was the model? You can point at the exact word where a sentence stops being what the model expected.</p></div>
+  <div class="card c-cyan"><p class="eyebrow">Notebook 6 · section 5</p><h3>Perplexity</h3><p>One number for how predictable a whole text is to the model. Scrambled word order makes it jump. Famous quotes get suspiciously low values, because the model has partly memorised them.</p></div>
+  <div class="card c-cyan"><p class="eyebrow">Notebook 5 · section 6</p><h3>Attention maps</h3><p>In the tiny GPT you trained, plot where each head looks. Usually one head watches the current or the previous character, and others spread out over the last few characters or back to the start of the word. Nobody programmed that.</p></div>
+  <div class="card c-cyan"><p class="eyebrow">Notebook 6 · section 8</p><h3>Embeddings</h3><p>Turn sentences into vectors and measure the angle between them. Sentences with a similar meaning point in a similar direction. This is how semantic search finds things.</p></div>
+</div>
+
+<h2 id="what-the-windows-do-not-show">What the windows do not show<a class="anchor" href="#what-the-windows-do-not-show" aria-label="Link to this section">#</a></h2>
+<p>Each of these tools is real and useful, and each is easy to over-read. Some honest limits:</p>
+<ul>
+  <li><strong>Attention shows where a head looked, not what it did with it.</strong> A bright square in an attention map is a fact about one step of the computation. It is not yet an explanation of the answer.</li>
+  <li><strong>A low perplexity has more than one cause.</strong> The text may be fluent, or the model may have seen it during training. This is the idea behind detecting benchmark contamination: if a model finds a test set suspiciously easy to predict, it may have read it before.</li>
+  <li><strong>The output depends on the wording and on chance.</strong> Change the prompt slightly, or sample again, and the answer can change. One example is never a measurement. Notebook 6 lets you test this in exercise 4.</li>
+  <li><strong>Small models can prefer one label no matter what the input is.</strong> Section 7 of notebook 6 shows this and one way to correct for it.</li>
+  <li><strong>A model's explanation of itself is generated text.</strong> When you ask a chat model why it answered as it did, the reply is produced the same way as any other reply. It may or may not describe what really happened inside.</li>
+</ul>
+
+<h2 id="how-researchers-go-further">How researchers go further<a class="anchor" href="#how-researchers-go-further" aria-label="Link to this section">#</a></h2>
+<p>Working out what the numbers inside a network mean is its own research field, usually called <strong>interpretability</strong>. A rough map of the approaches:</p>
+<div class="table-wrap"><table>
+  <thead><tr><th>Approach</th><th>The question it asks</th><th>What you need</th></tr></thead>
+  <tbody>
+    <tr><td>Behavioural testing</td><td>How does the output change when I change the input in a controlled way?</td><td>Only text in and out. Works on closed models too.</td></tr>
+    <tr><td>Looking at probabilities</td><td>How likely does the model find this text, token by token?</td><td>The logits. This is perplexity and surprisal from notebook 6.</td></tr>
+    <tr><td>Probing</td><td>Is some piece of information, such as the language or the grammar role, readable from the vectors inside?</td><td>The intermediate vectors and a small classifier trained on them.</td></tr>
+    <tr><td>Intervening</td><td>What happens to the output when I switch off or overwrite one part of the model?</td><td>Full access to the model while it runs.</td></tr>
+    <tr><td>Mechanistic interpretability</td><td>Can I describe the actual computation, part by part, in terms a person understands?</td><td>Full access, a lot of patience, and it is unfinished research.</td></tr>
+  </tbody>
+</table></div>
+<p>The first two rows are what you do in this course. The exercises at the end of notebook 5 are small experiments of the fourth kind: you remove the causal mask or the position embeddings and watch what breaks.</p>
+
+<h2 id="why-it-matters">Why it matters<a class="anchor" href="#why-it-matters" aria-label="Link to this section">#</a></h2>
+<ul>
+  <li><strong>Trust.</strong> If a model is used for something that matters, “it usually works” is not enough. You want to know when it fails and why.</li>
+  <li><strong>Fair testing.</strong> A benchmark score means little if the test questions were in the training data. Perplexity gives a first hint.</li>
+  <li><strong>Fairness.</strong> A tokenizer that needs several times as many tokens for one language makes that language slower and more expensive, and less of it fits into the context. You can measure this in a few lines.</li>
+  <li><strong>Fixing things.</strong> You can only repair what you can locate.</li>
+</ul>
+
+<h2 id="experiments-to-try">Experiments to try<a class="anchor" href="#experiments-to-try" aria-label="Link to this section">#</a></h2>
+<p>All of them use material from this lab.</p>
+<ol>
+  <li><strong>Let the model cheat.</strong> Remove the causal mask in notebook 5 and train for 300 steps. The loss drops a lot. Then generate text. What went wrong? (Notebook 5, exercise 1.)</li>
+  <li><strong>Take away the order.</strong> Remove the position embeddings. How much worse does the model get, and why can attention not tell positions apart by itself? (Notebook 5, exercise 2.)</li>
+  <li><strong>Find memorised text.</strong> Look for a sentence of 15 or more words with a GPT-2 perplexity below 5. (Notebook 6, exercise 2.)</li>
+  <li><strong>Break a classifier with wording.</strong> Change only the template of the zero-shot classifier and watch the accuracy. (Notebook 6, exercise 4.)</li>
+  <li><strong>Ask in three languages.</strong> In <a href="lab.html#ex6">exercise 6</a>, do the German and Hindi prompts get answers in the same language? Count the tokens of each prompt first.</li>
+  <li><strong>Compare two brains.</strong> Train the tiny GPT in notebook 5 a second time with another number in <code>torch.manual_seed</code> in the first cell. Does the loss end up in the same place? Do the attention maps look the same?</li>
+</ol>
+</article><aside class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#two-different-black-boxes">Two different black boxes</a></li><li><a href="#what-happens-between-text-in-and-text-out">What happens between text in and text out</a></li><li><a href="#six-windows-you-open-in-this-course">Six windows you open in this course</a></li><li><a href="#what-the-windows-do-not-show">What the windows do not show</a></li><li><a href="#how-researchers-go-further">How researchers go further</a></li><li><a href="#why-it-matters">Why it matters</a></li><li><a href="#experiments-to-try">Experiments to try</a></li></ol></aside></div><nav class="pager wrap" aria-label="Previous and next page"><a class="pager-prev" href="notebooks.html"><span>Previous</span>Notebooks</a><a class="pager-next" href="cheatsheet.html"><span>Next</span>Cheat sheet</a></nav>
+</main>
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div>
+      <p class="foot-title"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="5" y="12" width="22" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11 16 4l11 7" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="19.5" r="2.4" fill="var(--amber)"/></svg> Behind the Secrets of LLMs</p>
+      <p>Lab material for the course <em>Behind the Secrets of Large Language Models</em> at TU Dresden (ScaDS.AI).</p>
+      <p class="foot-small">This site loads no trackers, no web fonts and no scripts from other servers. It is built from the repository with <code>website/build.py</code>.</p>
+    </div>
+    <div>
+      <p class="foot-head">The material</p>
+      <a href="https://github.com/himanshubeniwal/behind-llms-lab">GitHub repository</a>
+      <a href="https://github.com/himanshubeniwal/behind-llms-lab/archive/refs/heads/main.zip">Download everything (.zip)</a>
+      <a href="notebooks.html">Notebooks</a>
+      <a href="lab.html">HPC lab</a>
+    </div>
+    <div>
+      <p class="foot-head">Help with the cluster</p>
+      <a href="https://compendium.hpc.tu-dresden.de">ZIH HPC Compendium</a>
+      <a href="https://jupyterhub.hpc.tu-dresden.de">JupyterHub</a>
+      <a href="mailto:hpc-support@tu-dresden.de">hpc-support@tu-dresden.de</a>
+      <a href="cheatsheet.html">Cheat sheet</a>
+    </div>
+  </div>
+</footer>
+<script src="assets/site.js?v=f01bcb2a" defer></script>
+</body>
+</html>

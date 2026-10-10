@@ -1,0 +1,252 @@
+<!--
+title: The HPC lab
+eyebrow: Step 3 · hands on
+lead: Seven small exercises. Each one is a folder with a short Python script and the Slurm job script that runs it. You start with a job that says hello and end with a real language model answering your prompts on a GPU.
+description: The seven HPC lab exercises with all code: first Slurm batch job, cancelling jobs, requesting a GPU, training a tiny GPT, a learning-rate sweep with job arrays, and running a pretrained LLM.
+-->
+<h2>How every exercise works</h2>
+<p class="lede">Go into the folder, make a folder for the logs, send the job, and read the log when it is done. That is the whole rhythm of working on a cluster.</p>
+<x-code lang="bash" title="the pattern">
+cd ~/behind-llms-lab/hpc_lab/01_hello      # one folder per exercise
+mkdir -p logs                              # the job writes its log here
+sbatch hello.sbatch                        # prints: Submitted batch job <jobid>
+squeue --me                                # is it waiting (PD) or running (R)?
+cat logs/hello-hpc-<jobid>.out             # what the program printed
+</x-code>
+<p>You need the environment from <a href="setup.html">Setup</a> for exercises 3 to 6. The first two only use the Python that is already on the cluster. Our project is <code>p_scads_lv_llm</code>, and it is already written into every job script.</p>
+
+<ul class="ex-nav">
+  <li><a href="setup.html"><b>0</b>Set up Python once</a></li>
+  <li><a href="#ex1"><b>1</b>Your first batch job</a></li>
+  <li><a href="#ex2"><b>2</b>Watch and cancel a job</a></li>
+  <li><a href="#ex3"><b>3</b>Get a GPU</a></li>
+  <li><a href="#ex4"><b>4</b>Train a tiny GPT</a></li>
+  <li><a href="#ex5"><b>5</b>A sweep with a job array</a></li>
+  <li><a href="#ex6"><b>6</b>Run a real LLM</a></li>
+</ul>
+
+<section class="ex" id="ex1">
+  <div class="ex-head"><div class="ex-num">1</div><div>
+    <h2>Your first batch job</h2>
+    <div class="meta-row"><span>01_hello</span><span>any cluster</span><span>CPU only</span><span>time limit 5 min</span></div>
+  </div></div>
+  <p><strong>You practise:</strong> your first <code>sbatch</code>, the variables Slurm gives a job, and why <code>--cpus-per-task</code> matters.</p>
+  <p>The Python script prints where it runs and what Slurm gave it. Then it estimates π by throwing random darts at a square, split over all the CPU cores the job got.</p>
+<x-code lang="bash" title="run it">
+cd ~/behind-llms-lab/hpc_lab/01_hello
+mkdir -p logs && sbatch hello.sbatch
+squeue --me
+cat logs/hello-hpc-<jobid>.out
+</x-code>
+  <h3>What to look for in the log</h3>
+  <ul>
+    <li><strong>Hello from</strong> shows the name of a compute node, not of the login node you typed on.</li>
+    <li><strong>os.cpu_count()</strong> is every core of that node. <strong>CPUs I may use</strong> is 4, because the job script asked for 4. Slurm keeps you inside what you asked for.</li>
+    <li>The lines starting with <code>SLURM_</code> are environment variables that every job gets: its ID, its name, the project, the node.</li>
+    <li>The last two lines give π and the speed in million samples per second.</li>
+  </ul>
+  <div class="callout try"><p><strong>Try it.</strong> Options on the command line win over the <code>#SBATCH</code> lines, so you can change the number of cores without editing the file. Compare the speed.</p>
+<x-code lang="bash">
+sbatch --cpus-per-task=1 hello.sbatch
+sbatch --cpus-per-task=8 hello.sbatch
+</x-code></div>
+  <h3>Reading the job script</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Line</th><th>What it says</th></tr></thead>
+    <tbody>
+      <tr><td><code>--job-name=hello-hpc</code></td><td>The name you see in <code>squeue</code>.</td></tr>
+      <tr><td><code>--account=p_scads_lv_llm</code></td><td>The project that pays for the computing time.</td></tr>
+      <tr><td><code>--ntasks=1</code></td><td>One process.</td></tr>
+      <tr><td><code>--cpus-per-task=4</code></td><td>With 4 cores.</td></tr>
+      <tr><td><code>--mem-per-cpu=1G</code></td><td>1 GB of memory for each core.</td></tr>
+      <tr><td><code>--time=00:05:00</code></td><td>A hard time limit, as hours:minutes:seconds. After that Slurm stops the job.</td></tr>
+      <tr><td><code>--output=logs/%x-%j.out</code></td><td>Where the printed text goes. <code>%x</code> is the job name and <code>%j</code> the job ID. The <code>logs</code> folder has to exist before you submit.</td></tr>
+      <tr><td><code>srun python3 …</code></td><td>Starts the program inside the job. Everything before it only describes the job.</td></tr>
+    </tbody>
+  </table></div>
+  <x-file path="hpc_lab/01_hello/hello.sbatch" open>
+  <x-file path="hpc_lab/01_hello/hello_hpc.py">
+</section>
+
+<section class="ex" id="ex2">
+  <div class="ex-head"><div class="ex-num">2</div><div>
+    <h2>Watch a job, then cancel it</h2>
+    <div class="meta-row"><span>02_cancel</span><span>any cluster</span><span>CPU only</span><span>time limit 10 min</span></div>
+  </div></div>
+  <p><strong>You practise:</strong> <code>squeue</code>, <code>scontrol</code>, <code>scancel</code>, <code>sacct</code>, and saving your work when the job is stopped.</p>
+  <p>This job is slow on purpose. It prints one line every 10 seconds for 8 minutes, so you have time to look at it from the outside and then stop it.</p>
+<x-code lang="bash" title="run it, look at it, stop it">
+cd ~/behind-llms-lab/hpc_lab/02_cancel
+mkdir -p logs
+sbatch sleepy.sbatch                 # prints "Submitted batch job <jobid>"
+squeue --me                          # the ST column goes from PD (pending) to R (running)
+scontrol show job <jobid>            # everything Slurm knows about the job
+tail -f logs/sleepy-<jobid>.out      # live log, Ctrl+C stops tail but not the job
+scancel <jobid>                      # stop it, then look for "received signal" in the log
+sacct -j <jobid> --format=JobID,JobName,State,Elapsed,ExitCode
+</x-code>
+  <h3>What to look for</h3>
+  <p>When you cancel a job, Slurm first sends the signal SIGTERM, which means “please stop”, and only later SIGKILL. The script catches SIGTERM and writes a small checkpoint file. A real training script should do the same. The end of the log looks like this:</p>
+<x-code lang="text" title="the end of the log (your numbers differ)">
+[sleepy] step    3  22:49:28  still working...
+[sleepy] step    4  22:49:29  still working...
+[sleepy] received signal 15 (SIGTERM) -> cleaning up
+[sleepy] saved checkpoint-<jobid>.json at step 4 (cancelled)
+</x-code>
+  <div class="callout try"><p><strong>Bonus: a job that waits on purpose.</strong> The REASON column of <code>squeue</code> tells you why a job is not running yet. <code>whypending</code> is a ZIH helper that explains it in more words.</p>
+<x-code lang="bash">
+sbatch --begin=now+5minutes sleepy.sbatch
+squeue --me                          # the REASON column says (BeginTime)
+whypending <jobid>
+</x-code></div>
+  <x-file path="hpc_lab/02_cancel/sleepy.sbatch" open>
+  <x-file path="hpc_lab/02_cancel/sleepy.py">
+</section>
+
+<section class="ex" id="ex3">
+  <div class="ex-head"><div class="ex-num">3</div><div>
+    <h2>Ask for a GPU and measure it</h2>
+    <div class="meta-row"><span>03_gpu</span><span>Alpha or Capella</span><span>1 GPU</span><span>time limit 10 min</span></div>
+  </div></div>
+  <p><strong>You practise:</strong> <code>--gres=gpu:1</code>, <code>nvidia-smi</code>, and the difference between a CPU and a GPU.</p>
+  <p>The script multiplies two big matrices, which is the main work inside every layer of a language model. It does it first on the CPU cores and then on the GPU, and prints the speed in TFLOP/s, that is 10<sup>12</sup> floating point operations per second.</p>
+<x-code lang="bash" title="run it from an Alpha or Capella login node">
+cd ~/behind-llms-lab/hpc_lab/03_gpu
+mkdir -p logs && sbatch gpu.sbatch
+cat logs/gpu-check-<jobid>.out
+</x-code>
+  <h3>What to look for in the log</h3>
+  <ul>
+    <li>The table from <code>nvidia-smi</code> shows exactly one GPU, an A100 on Alpha or an H100 on Capella. The node has more, but you only see the one you asked for.</li>
+    <li><strong>CUDA available: True</strong>, and the name and memory of the GPU.</li>
+    <li>Three speed lines: the CPU with 32-bit numbers, the GPU with 32-bit numbers, and the GPU with 16-bit numbers (<code>bfloat16</code>). How many times faster is the GPU? What does it gain from the smaller numbers?</li>
+  </ul>
+  <div class="callout warn"><p><strong>The line that gets you a GPU</strong> is <code>#SBATCH --gres=gpu:1</code>. Without it the job still runs on a GPU cluster, but the script prints <em>No GPU found</em>. And every cluster has its own Slurm, so a job sent from Barnard never gets a GPU.</p></div>
+  <div class="callout try"><p><strong>Try it.</strong> Everything in the last line of the job script can be changed. Make the matrices smaller or bigger with <code>--n</code> and see when the GPU stops being worth it.</p></div>
+  <x-file path="hpc_lab/03_gpu/gpu.sbatch" open>
+  <x-file path="hpc_lab/03_gpu/gpu_check.py">
+</section>
+
+<section class="ex" id="ex4">
+  <div class="ex-head"><div class="ex-num">4</div><div>
+    <h2>Train a tiny GPT</h2>
+    <div class="meta-row"><span>04_tinygpt</span><span>Alpha or Capella</span><span>1 GPU</span><span>time limit 30 min</span></div>
+  </div></div>
+  <p><strong>You practise:</strong> a real training run as a batch job, watching the loss in the log, and using the result afterwards.</p>
+  <p>The model is a small GPT that reads and writes single characters. It is the same model you build step by step in <a href="notebooks/5-attention-and-tinygpt.html">notebook 5</a>: 4 Transformer blocks, about 0.8 million parameters. It trains for 5000 steps on tiny Shakespeare, about 1 MB of plays in one text file.</p>
+<x-code lang="bash" title="run it">
+cd ~/behind-llms-lab/hpc_lab/04_tinygpt
+mkdir -p logs && sbatch train.sbatch
+tail -f logs/tinygpt-<jobid>.out          # watch the loss go down
+</x-code>
+  <h3>What to look for in the log</h3>
+  <ul>
+    <li>The first line shows <code>device=cuda</code>, the size of the vocabulary (65 characters) and the number of parameters.</li>
+    <li>Every 250 steps there is a line with the training loss, the validation loss and the speed in tokens per second.</li>
+    <li>A model that knows nothing has a loss of log 65 ≈ 4.17. The counting model from <a href="notebooks/4-tokens-and-bigram-lm.html">notebook 4</a> gets stuck around 2.5. Where does this one end up?</li>
+    <li>At the end the model writes 500 characters of its own Shakespeare.</li>
+  </ul>
+  <p>The job writes three files into <code>$WS_DIR/runs/tinygpt-&lt;jobid&gt;</code>: <code>ckpt.pt</code> with the weights, <code>metrics.json</code> with the final losses, and <code>samples.txt</code> with the generated text.</p>
+  <h3>Let the model write</h3>
+<x-code lang="bash" title="in an interactive job, or briefly on the login node">
+source ../00_setup/setup_env.sh
+python sample.py --ckpt $WS_DIR/runs/tinygpt-<jobid>/ckpt.pt --prompt "ROMEO:"
+python sample.py --ckpt $WS_DIR/runs/tinygpt-<jobid>/ckpt.pt --prompt "ROMEO:" --temperature 0.3
+python sample.py --ckpt $WS_DIR/runs/tinygpt-<jobid>/ckpt.pt --prompt "ROMEO:" --temperature 1.5 --top-k 5
+</x-code>
+  <div class="callout try"><p><strong>Try it: a bigger model.</strong> Everything after the name of the job script is passed on to Python.</p>
+<x-code lang="bash">
+sbatch train.sbatch --n-layer 6 --n-embd 384
+sbatch train.sbatch --n-layer 6 --n-head 6 --n-embd 384 --block-size 256
+</x-code>
+  <p><strong>Try it: a job that runs out of time.</strong> Is <code>ckpt.pt</code> still saved? Look at the line <code>--signal=TERM@60</code> in the job script and at <code>on_sigterm</code> in the Python script.</p>
+<x-code lang="bash">
+sbatch --time=00:02:00 train.sbatch
+</x-code></div>
+  <h3>The options of the training script</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Option</th><th>Default</th><th>What it is</th></tr></thead>
+    <tbody>
+      <tr><td><code>--steps</code></td><td>3000</td><td>Number of training steps. The job script sets 5000.</td></tr>
+      <tr><td><code>--lr</code></td><td>1e-3</td><td>Learning rate.</td></tr>
+      <tr><td><code>--batch-size</code></td><td>64</td><td>How many text windows per step.</td></tr>
+      <tr><td><code>--block-size</code></td><td>128</td><td>The context length in characters.</td></tr>
+      <tr><td><code>--n-layer</code></td><td>4</td><td>Number of Transformer blocks.</td></tr>
+      <tr><td><code>--n-head</code></td><td>4</td><td>Attention heads per block. <code>--n-embd</code> must be divisible by it.</td></tr>
+      <tr><td><code>--n-embd</code></td><td>128</td><td>The width of the model.</td></tr>
+      <tr><td><code>--dropout</code></td><td>0.1</td><td>Dropout rate.</td></tr>
+      <tr><td><code>--device</code></td><td>auto</td><td><code>auto</code>, <code>cpu</code> or <code>cuda</code>. With <code>auto</code> it uses the GPU if Slurm gave you one.</td></tr>
+    </tbody>
+  </table></div>
+  <x-file path="hpc_lab/04_tinygpt/train.sbatch" open>
+  <x-file path="hpc_lab/04_tinygpt/train_tinygpt.py">
+  <x-file path="hpc_lab/04_tinygpt/sample.py">
+</section>
+
+<section class="ex" id="ex5">
+  <div class="ex-head"><div class="ex-num">5</div><div>
+    <h2>A learning-rate sweep with a job array</h2>
+    <div class="meta-row"><span>05_sweep</span><span>Alpha or Capella</span><span>4 × 1 GPU</span><span>time limit 20 min each</span></div>
+  </div></div>
+  <p><strong>You practise:</strong> job arrays with <code>--array</code>, and jobs that wait for other jobs with <code>--dependency=afterok</code>.</p>
+  <p>Which learning rate is best for the tiny GPT? Instead of trying four values one after the other, you send one array job. Slurm starts the same script four times, each on its own GPU. The only thing that changes is <code>$SLURM_ARRAY_TASK_ID</code>, which goes from 0 to 3 and picks the learning rate. A second, tiny job waits until all four are done and prints a table.</p>
+<x-code lang="bash" title="run it">
+cd ~/behind-llms-lab/hpc_lab/05_sweep
+mkdir -p logs
+source ../00_setup/setup_env.sh      # so that $WS_DIR is set
+./submit_sweep.sh                    # sends the sweep and the summary job
+squeue --me                          # you will see <jobid>_0, <jobid>_1, ...
+</x-code>
+  <h3>What to look for</h3>
+  <ul>
+    <li><code>squeue</code> shows four tasks of one array, and the collect job waiting with the reason <em>Dependency</em>.</li>
+    <li>Each task writes its own log, <code>logs/lr-sweep-&lt;jobid&gt;_0.out</code> to <code>_3.out</code>.</li>
+    <li>When all are done, <code>logs/lr-collect-&lt;jobid&gt;.out</code> holds the result, best run first:</li>
+  </ul>
+<x-code lang="text" title="the shape of the result table">
+run                   lr   steps     train       val    secs  device
+lr-…               …e-03    2000    …         …          …    cuda
+
+best: lr-…  (val loss …)
+</x-code>
+  <div class="callout try"><p><strong>Try it.</strong> Cancel just one task of a running array with <code>scancel &lt;jobid&gt;_3</code>. What happens to the collect job now? Then change <code>--array=0-3</code> to <code>--array=0-3%2</code>, so that at most two tasks run at the same time. Or add more learning rates to the list <code>LEARNING_RATES</code> and make the array longer.</p></div>
+  <x-file path="hpc_lab/05_sweep/submit_sweep.sh" open>
+  <x-file path="hpc_lab/05_sweep/sweep.sbatch" open>
+  <x-file path="hpc_lab/05_sweep/collect.sbatch">
+  <x-file path="hpc_lab/05_sweep/collect_results.py">
+</section>
+
+<section class="ex" id="ex6">
+  <div class="ex-head"><div class="ex-num">6</div><div>
+    <h2>Run a pretrained LLM</h2>
+    <div class="meta-row"><span>06_hf_generate</span><span>Alpha or Capella</span><span>1 GPU</span><span>time limit 15 min</span></div>
+  </div></div>
+  <p><strong>You practise:</strong> getting a model from Hugging Face into your workspace, and running it over a whole file of prompts as a GPU job.</p>
+  <p>The model is <code>Qwen/Qwen2.5-0.5B-Instruct</code>. It has 0.5 billion parameters, speaks many languages and needs about 1 GB of GPU memory. First you download it once on the login node. Then the job loads it from your workspace and answers every line of <code>prompts.txt</code>.</p>
+<x-code lang="bash" title="run it">
+cd ~/behind-llms-lab/hpc_lab/06_hf_generate
+source ../00_setup/setup_env.sh
+python generate.py --download-only        # on the login node, fetches the model once
+mkdir -p logs && sbatch generate.sbatch
+cat logs/hf-generate-<jobid>.out
+</x-code>
+  <h3>What to look for in the log</h3>
+  <ul>
+    <li><code>HF_HOME</code> points into your workspace, not into your home folder.</li>
+    <li>The model line shows the number of parameters, <code>cuda</code> and <code>torch.bfloat16</code>.</li>
+    <li>Every prompt is printed with its answer. The answers are also saved as <code>outputs-&lt;jobid&gt;.jsonl</code>, one JSON object per line.</li>
+    <li>The last line gives the speed in new tokens per second. Compare it with the same model in <a href="notebooks/6-pretrained-llms-for-text-analysis.html">notebook 6</a> on Colab.</li>
+  </ul>
+  <div class="callout try"><p><strong>Try it.</strong> Do the German and Hindi prompts get answers in the same language? Add your own lines to <code>prompts.txt</code>. Change <code>--temperature</code> or <code>--max-new-tokens</code>. Or try another model. The job runs offline, so download the model first:</p>
+<x-code lang="bash">
+python generate.py --download-only --model gpt2
+sbatch generate.sbatch --model gpt2
+</x-code>
+  <p>GPT-2 only knows English and has no chat format, so it simply continues your text. For CPU against GPU, copy the job script, remove the <code>--gres</code> line and ask for more CPU cores.</p></div>
+  <x-file path="hpc_lab/06_hf_generate/generate.sbatch" open>
+  <x-file path="hpc_lab/06_hf_generate/generate.py">
+  <x-file path="hpc_lab/06_hf_generate/prompts.txt">
+</section>
+
+<h2>And now your own job</h2>
+<p>You have used every building block there is: a job script, a GPU, the workspace, checkpoints, arrays and dependencies, and a model from Hugging Face. The <a href="setup.html#your-own-experiments">Setup page</a> has a generator that writes the job script for your own experiment. All commands in one place are on the <a href="cheatsheet.html">cheat sheet</a>.</p>

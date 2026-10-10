@@ -1,0 +1,9 @@
+# one prompt per line; lines starting with # are ignored
+Explain in two sentences what a GPU is good for.
+What is the capital of Saxony, and what is it famous for?
+Write a haiku about a supercomputer that is waiting in a queue.
+Erkläre in zwei Sätzen, was ein Sprachmodell ist.
+एक वाक्य में बताइए कि कृत्रिम बुद्धिमत्ता क्या है।
+Translate to French: "The job was cancelled because it ran out of time."
+A train leaves Dresden at 9:15 and arrives in Berlin at 11:05. How long is the trip?
+List three risks of large language models.

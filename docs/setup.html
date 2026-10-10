@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Get set up · Behind the Secrets of LLMs</title>
+<meta name="description" content="Step by step setup for the lab: log in to the ZIH cluster with ssh, clone the lab kit, create the workspace and Python environment, and write job scripts for your own experiments.">
+<meta property="og:title" content="Get set up · Behind the Secrets of LLMs">
+<meta property="og:description" content="Step by step setup for the lab: log in to the ZIH cluster with ssh, clone the lab kit, create the workspace and Python environment, and write job scripts for your own experiments.">
+<meta property="og:type" content="website">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css?v=f01bcb2a">
+<script>(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t}catch(e){}})()</script>
+</head>
+<body class="page-setup">
+<a class="skip" href="#main">Skip to the content</a>
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="index.html"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="5" y="12" width="22" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11 16 4l11 7" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="19.5" r="2.4" fill="var(--amber)"/></svg><span class="brand-text"><b>Behind the Secrets of LLMs</b><i>lab</i></span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav">Menu</button>
+    <nav id="nav" class="nav" aria-label="Main"><a href="index.html">Overview</a><a href="clusters.html">Clusters</a><a href="setup.html" aria-current="page">Setup</a><a href="lab.html">HPC lab</a><a href="crash-course.html">Crash course</a><a href="notebooks.html">Notebooks</a><a href="black-box.html">Black box</a><a href="cheatsheet.html">Cheat sheet</a></nav>
+    <div class="top-tools">
+      <a class="icon-btn" href="https://github.com/himanshubeniwal/behind-llms-lab" aria-label="The repository on GitHub" title="GitHub repository"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg></a>
+      <button class="icon-btn theme-toggle" type="button" aria-label="Switch between dark and light" title="Dark or light"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 0 18V3Z"/><circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+    </div>
+  </div>
+</header>
+<main id="main">
+<header class="page-hero"><div class="wrap"><p class="eyebrow">Step 2 · do this once</p><h1>Get set up</h1><p class="lead">Four steps take you from your own terminal to a working Python environment with PyTorch on the cluster. After that, every job script switches the environment on by itself.</p></div></header><div class="wrap layout has-toc"><article class="prose">
+<h2 id="before-you-start">Before you start<a class="anchor" href="#before-you-start" aria-label="Link to this section">#</a></h2>
+<ul>
+  <li>You have a <strong>ZIH login</strong> and you joined the course project <code>p_scads_lv_llm</code>.</li>
+  <li>You are on the <strong>university network or the VPN</strong>.</li>
+  <li>You have a <strong>terminal</strong>: Terminal on macOS and Linux, PowerShell or Windows Terminal on Windows. All of them know <code>ssh</code>.</li>
+</ul>
+<p>Not sure what a login node or a workspace is? Read <a href="clusters.html">Meet the machines</a> first.</p>
+
+<div class="zih-box">
+  <label for="zih">Your ZIH login</label>
+  <input class="zih-input" id="zih" type="text" placeholder="for example s1234567" autocomplete="off" autocapitalize="none" spellcheck="false">
+  <span>Type it once and every command on this site is ready to copy.</span>
+  <small>It stays in this browser and is not sent anywhere. Your password is never needed on this site.</small>
+</div>
+
+<h2 id="the-four-steps">The four steps<a class="anchor" href="#the-four-steps" aria-label="Link to this section">#</a></h2>
+<ol class="steps">
+  <li>
+    <h3>Log in</h3>
+    <p>Pick a GPU cluster. Alpha has A100 GPUs, Capella has H100 GPUs. Both work for everything in this lab.</p>
+<figure class="code "><figcaption><span class="code-title">on your computer</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">ssh<span class="w"> </span><span class="zih">&lt;zih-login&gt;</span>@login1.alpha.hpc.tu-dresden.de<span class="w">      </span><span class="c1"># GPU cluster, 8 A100 per node</span>
+ssh<span class="w"> </span><span class="zih">&lt;zih-login&gt;</span>@login1.capella.hpc.tu-dresden.de<span class="w">    </span><span class="c1"># GPU cluster, 4 H100 per node</span>
+ssh<span class="w"> </span><span class="zih">&lt;zih-login&gt;</span>@login1.barnard.hpc.tu-dresden.de<span class="w">    </span><span class="c1"># CPU cluster</span></code></pre></figure>
+    <p>The first time, <code>ssh</code> asks if you trust the machine. Compare what it shows with the <a href="https://compendium.hpc.tu-dresden.de/access/key_fingerprints/">key fingerprints in the Compendium</a> and answer <code>yes</code>. Then type your ZIH password. Nothing appears while you type, that is normal.</p>
+    <details class="file">
+      <summary><span class="file-name">Optional: log in without typing the password every time</span></summary>
+      <div style="padding: 4px 16px 12px">
+        <p>Create a key pair on your own computer and copy the public half to the cluster. Give the key a passphrase when you are asked.</p>
+<figure class="code "><figcaption><span class="code-title">on your computer (macOS, Linux)</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">ssh-keygen<span class="w"> </span>-t<span class="w"> </span>ed25519<span class="w"> </span>-f<span class="w"> </span>~/.ssh/id_ed25519
+ssh-copy-id<span class="w"> </span>-i<span class="w"> </span>~/.ssh/id_ed25519.pub<span class="w"> </span><span class="zih">&lt;zih-login&gt;</span>@login1.alpha.hpc.tu-dresden.de</code></pre></figure>
+        <p>Windows has no <code>ssh-copy-id</code>. Copy the file over and add it by hand:</p>
+<figure class="code "><figcaption><span class="code-title">on Windows, in PowerShell</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">ssh-keygen<span class="w"> </span>-t<span class="w"> </span>ed25519
+scp<span class="w"> </span><span class="nv">$env</span>:USERPROFILE<span class="se">\.</span>ssh<span class="se">\i</span>d_ed25519.pub<span class="w"> </span><span class="zih">&lt;zih-login&gt;</span>@login1.alpha.hpc.tu-dresden.de:
+ssh<span class="w"> </span><span class="zih">&lt;zih-login&gt;</span>@login1.alpha.hpc.tu-dresden.de</code></pre></figure>
+<figure class="code "><figcaption><span class="code-title">then, on the login node</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">mkdir<span class="w"> </span>-p<span class="w"> </span>~/.ssh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>cat<span class="w"> </span>id_ed25519.pub<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.ssh/authorized_keys<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>id_ed25519.pub</code></pre></figure>
+        <p class="small">More about keys and ssh settings is in the <a href="https://compendium.hpc.tu-dresden.de/access/ssh_login/">Compendium</a>.</p>
+      </div>
+    </details>
+  </li>
+  <li>
+    <h3>Get the lab kit</h3>
+    <p>You are now on a login node. Clone the repository into your home folder. It is small.</p>
+<figure class="code "><figcaption><span class="code-title">on the login node</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">git<span class="w"> </span>clone<span class="w"> </span>https://github.com/himanshubeniwal/behind-llms-lab.git
+<span class="nb">cd</span><span class="w"> </span>behind-llms-lab/hpc_lab</code></pre></figure>
+  </li>
+  <li>
+    <h3>Build the Python environment</h3>
+    <p>Installing PyTorch is real work, so it does not belong on the login node. Ask Slurm for a small interactive job, run the setup script there, and give the machine back.</p>
+<figure class="code "><figcaption><span class="code-title">on the login node</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">srun<span class="w"> </span>--account<span class="o">=</span>p_scads_lv_llm<span class="w"> </span>--ntasks<span class="o">=</span><span class="m">1</span><span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">4</span><span class="w"> </span>--mem-per-cpu<span class="o">=</span>2G<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>--time<span class="o">=</span><span class="m">00</span>:45:00<span class="w"> </span>--pty<span class="w"> </span>bash<span class="w"> </span>-l<span class="w">          </span><span class="c1"># a small interactive job</span>
+<span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab
+<span class="nb">source</span><span class="w"> </span>00_setup/setup_env.sh<span class="w">                </span><span class="c1"># workspace, venv, training text</span>
+<span class="nb">exit</span><span class="w">                                        </span><span class="c1"># give the machine back</span></code></pre></figure>
+    <p>The first run takes 5 to 10 minutes. At the end you should see something like this:</p>
+<figure class="code output"><figcaption><span class="code-title">what the setup script prints</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">workspace : /data/horse/ws/<span class="zih">&lt;zih-login&gt;</span>-llm-lab
+creating the venv /data/horse/ws/<span class="zih">&lt;zih-login&gt;</span>-llm-lab/venv-llm (only the first time, this takes a few minutes)
+python    : /data/horse/ws/<span class="zih">&lt;zih-login&gt;</span>-llm-lab/venv-llm/bin/python (Python 3.12.3)
+downloaded tiny Shakespeare to /data/horse/ws/<span class="zih">&lt;zih-login&gt;</span>-llm-lab/data/input.txt
+environment ready</code></pre></figure>
+    <div class="callout note"><p><strong>Use <code>source</code>, not <code>bash</code>.</strong> Only then does the environment stay switched on in your shell. From now on the same line takes a second, and the job scripts run it themselves.</p></div>
+  </li>
+  <li>
+    <h3>Check that it works</h3>
+    <p>Send the first job of the lab. It needs no GPU and only runs for a few seconds once it starts.</p>
+<figure class="code "><figcaption><span class="code-title">on the login node</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/01_hello
+mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sbatch<span class="w"> </span>hello.sbatch
+squeue<span class="w"> </span>--me<span class="w">                                 </span><span class="c1"># PD means waiting, R means running</span>
+cat<span class="w"> </span>logs/hello-hpc-*.out<span class="w">                    </span><span class="c1"># when the job is gone from the queue</span></code></pre></figure>
+    <p>If the log shows the name of a compute node and an estimate of pi, you are ready for <a href="lab.html">the HPC lab</a>.</p>
+  </li>
+</ol>
+
+<h2 id="the-setup-script">The setup script<a class="anchor" href="#the-setup-script" aria-label="Link to this section">#</a></h2>
+<p><code>00_setup/setup_env.sh</code> does five things, and it is safe to run as often as you like:</p>
+<ol>
+  <li>It creates the workspace <code>llm-lab</code>, or reuses it. This is the big, fast storage for the environment, the data and the models.</li>
+  <li>It loads a Python module of the cluster.</li>
+  <li>It creates a virtual environment with PyTorch and transformers inside the workspace, or switches it on if it is already there.</li>
+  <li>It points the pip, Hugging Face and temporary caches into the workspace, away from the small home folder.</li>
+  <li>It downloads the tiny Shakespeare text that exercise 4 trains on.</li>
+</ol>
+<p>It also sets <code>$WS_DIR</code>, the path of your workspace. The job scripts use it for data and results.</p>
+<details class="file" open><summary><span class="file-name">setup_env.sh</span><span class="file-meta">87 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/00_setup/setup_env.sh</span><span class="code-lang">shell</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/00_setup/setup_env.sh">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+<span class="c1"># Behind the Secrets of LLMs, HPC lab</span>
+<span class="c1"># 00_setup/setup_env.sh: sets up your Python environment once, and switches it on later.</span>
+<span class="c1">#</span>
+<span class="c1"># The first time it installs packages, which takes 5 to 10 minutes. Do that inside</span>
+<span class="c1"># a small interactive job, not on the login node:</span>
+<span class="c1">#</span>
+<span class="c1">#     srun --account=p_scads_lv_llm --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G \</span>
+<span class="c1">#          --time=00:45:00 --pty bash -l</span>
+<span class="c1">#     source 00_setup/setup_env.sh</span>
+<span class="c1">#</span>
+<span class="c1"># After that, in every new shell and in every batch job, it only takes a second:</span>
+<span class="c1">#</span>
+<span class="c1">#     source 00_setup/setup_env.sh</span>
+<span class="c1">#</span>
+<span class="c1"># Use &quot;source&quot;, not &quot;bash&quot;, so that the venv stays active in your shell.</span>
+<span class="c1">#</span>
+<span class="c1"># What it does:</span>
+<span class="c1">#   1. creates (or reuses) a workspace, which is big and fast storage for venv, data and models</span>
+<span class="c1">#   2. loads a Python module</span>
+<span class="c1">#   3. creates (or reuses) a venv with PyTorch and transformers inside the workspace</span>
+<span class="c1">#   4. points the pip, Hugging Face and tmp caches into the workspace instead of $HOME</span>
+<span class="c1">#   5. downloads the tiny Shakespeare text for exercise 4</span>
+
+<span class="c1"># ---- settings you may change ------------------------------------------------</span>
+<span class="nv">WS_NAME</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">WS_NAME</span><span class="k">:-</span><span class="nv">llm</span><span class="p">-lab</span><span class="si">}</span><span class="s2">&quot;</span><span class="w">     </span><span class="c1"># workspace name</span>
+<span class="nv">WS_FS</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">WS_FS</span><span class="k">:-</span><span class="nv">horse</span><span class="si">}</span><span class="s2">&quot;</span><span class="w">           </span><span class="c1"># file system, horse works on all clusters</span>
+<span class="nv">WS_DAYS</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">WS_DAYS</span><span class="k">:-</span><span class="nv">30</span><span class="si">}</span><span class="s2">&quot;</span><span class="w">          </span><span class="c1"># lifetime in days, extend it later with ws_extend</span>
+<span class="nv">VENV_NAME</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">VENV_NAME</span><span class="k">:-</span><span class="nv">venv</span><span class="p">-llm</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<span class="c1"># Python module. If it does not exist on your cluster, look with: module spider Python</span>
+<span class="nv">PY_MODULES</span><span class="o">=</span><span class="s2">&quot;release/24.10 GCCcore/13.3.0 Python/3.12.3&quot;</span>
+
+<span class="c1"># PyTorch built for CUDA 12.x runs with the drivers on Alpha (A100) and Capella (H100).</span>
+<span class="c1"># A plain &quot;pip install torch&quot; may pick a CUDA 13 build that needs a newer driver.</span>
+<span class="c1"># If nvidia-smi shows CUDA 13.0 or newer you can use .../whl/cu130 instead.</span>
+<span class="nv">TORCH_INDEX</span><span class="o">=</span><span class="s2">&quot;https://download.pytorch.org/whl/cu128&quot;</span>
+<span class="c1"># -----------------------------------------------------------------------------</span>
+
+<span class="c1"># 1) workspace. If this shell (or the shell that submitted the job) already has it, reuse it.</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">    </span><span class="c1"># ws_allocate prints the path. For a workspace that already exists it just reuses it.</span>
+<span class="w">    </span><span class="nv">WS_DIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span>ws_allocate<span class="w"> </span>-F<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_FS</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_NAME</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DAYS</span><span class="s2">&quot;</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="k">)</span><span class="s2">&quot;</span>
+<span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Could not create the workspace &#39;</span><span class="nv">$WS_NAME</span><span class="s2">&#39; on &#39;</span><span class="nv">$WS_FS</span><span class="s2">&#39;. Check with: ws_list -l&quot;</span><span class="w"> </span>&gt;<span class="p">&amp;</span><span class="m">2</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
+<span class="k">fi</span>
+<span class="nb">export</span><span class="w"> </span>WS_DIR
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;workspace : </span><span class="nv">$WS_DIR</span><span class="s2">&quot;</span>
+
+<span class="c1"># 2) modules</span>
+module<span class="w"> </span>purge<span class="w"> </span>&gt;<span class="w"> </span>/dev/null<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span>
+<span class="k">if</span><span class="w"> </span>!<span class="w"> </span>module<span class="w"> </span>load<span class="w"> </span><span class="nv">$PY_MODULES</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;&#39;module load </span><span class="nv">$PY_MODULES</span><span class="s2">&#39; did not work. Run &#39;module spider Python&#39; and change PY_MODULES.&quot;</span><span class="w"> </span>&gt;<span class="p">&amp;</span><span class="m">2</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
+<span class="k">fi</span>
+
+<span class="c1"># 3) caches go into the workspace, because the $HOME quota is small</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PIP_CACHE_DIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/.cache/pip&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">HF_HOME</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/.cache/huggingface&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TMPDIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/tmp&quot;</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PIP_CACHE_DIR</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HF_HOME</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TMPDIR</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/data&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/runs&quot;</span>
+
+<span class="c1"># 4) venv</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/</span><span class="nv">$VENV_NAME</span><span class="s2">/bin/activate&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;creating the venv </span><span class="nv">$WS_DIR</span><span class="s2">/</span><span class="nv">$VENV_NAME</span><span class="s2"> (only the first time, this takes a few minutes)&quot;</span>
+<span class="w">    </span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/</span><span class="nv">$VENV_NAME</span><span class="s2">&quot;</span>
+<span class="w">    </span><span class="nb">source</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/</span><span class="nv">$VENV_NAME</span><span class="s2">/bin/activate&quot;</span>
+<span class="w">    </span>pip<span class="w"> </span>install<span class="w"> </span>--quiet<span class="w"> </span>--upgrade<span class="w"> </span>pip
+<span class="w">    </span>pip<span class="w"> </span>install<span class="w"> </span>--quiet<span class="w"> </span>torch<span class="w"> </span>--index-url<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TORCH_INDEX</span><span class="s2">&quot;</span>
+<span class="w">    </span>pip<span class="w"> </span>install<span class="w"> </span>--quiet<span class="w"> </span>numpy<span class="w"> </span>matplotlib<span class="w"> </span>tqdm<span class="w"> </span>transformers<span class="w"> </span>accelerate<span class="w"> </span>ipykernel
+<span class="w">    </span><span class="c1"># the same environment as a kernel in JupyterHub</span>
+<span class="w">    </span>python<span class="w"> </span>-m<span class="w"> </span>ipykernel<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>--name<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$VENV_NAME</span><span class="s2">&quot;</span><span class="w"> </span>--display-name<span class="w"> </span><span class="s2">&quot;LLM Lab (</span><span class="nv">$VENV_NAME</span><span class="s2">)&quot;</span>
+<span class="k">else</span>
+<span class="w">    </span><span class="nb">source</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/</span><span class="nv">$VENV_NAME</span><span class="s2">/bin/activate&quot;</span>
+<span class="k">fi</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;python    : </span><span class="k">$(</span>which<span class="w"> </span>python<span class="k">)</span><span class="s2"> (</span><span class="k">$(</span>python<span class="w"> </span>--version<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="k">)</span><span class="s2">)&quot;</span>
+
+<span class="c1"># 5) the training text for exercise 4</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-s<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/data/input.txt&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">    </span>curl<span class="w"> </span>-sSL<span class="w"> </span>-o<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/data/input.txt&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;downloaded tiny Shakespeare to </span><span class="nv">$WS_DIR</span><span class="s2">/data/input.txt&quot;</span>
+<span class="k">fi</span>
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;environment ready&quot;</span></code></pre></figure></details>
+
+<h3>Settings you may change</h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Setting</th><th>Default</th><th>What it is</th></tr></thead>
+  <tbody>
+    <tr><td><code>WS_NAME</code></td><td><code>llm-lab</code></td><td>The name of the workspace.</td></tr>
+    <tr><td><code>WS_FS</code></td><td><code>horse</code></td><td>The file system. <code>horse</code> works on all clusters.</td></tr>
+    <tr><td><code>WS_DAYS</code></td><td><code>30</code></td><td>The lifetime in days. Extend it later with <code>ws_extend</code>.</td></tr>
+    <tr><td><code>VENV_NAME</code></td><td><code>venv-llm</code></td><td>The name of the virtual environment.</td></tr>
+    <tr><td><code>PY_MODULES</code></td><td class="wrap-code"><code>release/24.10 GCCcore/13.3.0 Python/3.12.3</code></td><td>The Python module. Module versions change about twice a year. If loading fails, run <code>module spider Python</code> and put the new names here.</td></tr>
+    <tr><td><code>TORCH_INDEX</code></td><td class="wrap-code"><code>https://download.pytorch.org/whl/cu128</code></td><td>Which PyTorch build to install. This one fits the GPU drivers on Alpha and Capella.</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="where-to-run-the-notebooks">Where to run the notebooks<a class="anchor" href="#where-to-run-the-notebooks" aria-label="Link to this section">#</a></h2>
+<div class="grid three">
+  <div class="card c-amber"><p class="eyebrow">the easy way</p><h3>Google Colab</h3><p>Nothing to install. Use the buttons on the <a href="notebooks.html">Notebooks</a> page. For notebooks 5 and 6, choose a T4 GPU under Runtime &gt; Change runtime type.</p></div>
+  <div class="card c-cyan"><p class="eyebrow">on the cluster</p><h3>JupyterHub</h3><p>Open <a href="https://jupyterhub.hpc.tu-dresden.de">jupyterhub.hpc.tu-dresden.de</a> from the university network, start a server, and pick the kernel <em>LLM Lab (venv-llm)</em>. The setup script installed it for you.</p></div>
+  <div class="card c-violet"><p class="eyebrow">offline</p><h3>Your laptop</h3><p>Clone the repository, then <code>pip install torch transformers matplotlib jupyter</code> in a virtual environment. The notebooks pick small settings when there is no GPU.</p></div>
+</div>
+
+<h2 id="your-own-experiments">Your own experiments<a class="anchor" href="#your-own-experiments" aria-label="Link to this section">#</a></h2>
+<p class="lede">The lab kit is meant to be taken apart. Once the seven exercises work, the same pieces run your own code.</p>
+<ol>
+  <li><strong>Code goes into your home folder, everything big goes into the workspace.</strong> After <code>source 00_setup/setup_env.sh</code> the workspace is <code>$WS_DIR</code>. The lab uses <code>$WS_DIR/data</code> for data and <code>$WS_DIR/runs</code> for results.</li>
+  <li><strong>Need another package?</strong> Start an interactive job as in step 3, switch the environment on and install it. It lands in the environment in your workspace and every later job has it.</li>
+  <li><strong>Write a job script.</strong> Copy the one from the exercise that is closest to what you want and change the last line, or use the generator below.</li>
+  <li><strong>Send it and watch it.</strong> <code>sbatch</code>, <code>squeue --me</code>, <code>tail -f logs/…</code>. The <a href="cheatsheet.html">cheat sheet</a> has the rest.</li>
+</ol>
+<figure class="code "><figcaption><span class="code-title">add a package to the lab environment</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">srun<span class="w"> </span>--account<span class="o">=</span>p_scads_lv_llm<span class="w"> </span>--ntasks<span class="o">=</span><span class="m">1</span><span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">4</span><span class="w"> </span>--mem-per-cpu<span class="o">=</span>2G<span class="w"> </span>--time<span class="o">=</span><span class="m">00</span>:30:00<span class="w"> </span>--pty<span class="w"> </span>bash<span class="w"> </span>-l
+<span class="nb">source</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/00_setup/setup_env.sh
+pip<span class="w"> </span>install<span class="w"> </span>datasets<span class="w">                        </span><span class="c1"># or whatever you need</span>
+<span class="nb">exit</span></code></pre></figure>
+
+<div class="widget" data-widget="sbatch"><div class="widget-body"><p>This job script generator needs JavaScript. Without it, copy <code>hpc_lab/04_tinygpt/train.sbatch</code> and change the last line.</p></div></div>
+
+<h3>Habits worth copying from the lab scripts</h3>
+<ul>
+  <li><strong>Create <code>logs/</code> before you submit.</strong> If the folder for the log file is missing, the job ends at once and leaves no trace.</li>
+  <li><strong>Print with <code>flush=True</code> or run <code>python -u</code>.</strong> Otherwise the log stays empty until the buffer is full.</li>
+  <li><strong>Save a checkpoint when Slurm says stop.</strong> Slurm sends SIGTERM when you cancel a job or when the time is over. <code>train_tinygpt.py</code> catches it and saves, and <code>--signal=TERM@60</code> makes the signal come 60 seconds early.</li>
+  <li><strong>Ask for what you need, not more.</strong> A job that asks for less time and fewer GPUs starts sooner.</li>
+  <li><strong>Download models on the login node first.</strong> Then set <code>HF_HUB_OFFLINE=1</code> in the job, as <a href="lab.html#ex6">exercise 6</a> does, so the job uses the copy in your workspace.</li>
+  <li><strong>Sweeps are job arrays.</strong> One script, one line <code>--array=0-3</code>, and <code>$SLURM_ARRAY_TASK_ID</code> picks the setting. See <a href="lab.html#ex5">exercise 5</a>.</li>
+</ul>
+
+<h3>A separate workspace for another project</h3>
+<p>The setup script takes its settings from the environment. To keep a project apart from the lab, give it its own workspace. Jobs you send from the same shell use it too.</p>
+<figure class="code "><figcaption><span class="code-title">on the login node, inside an interactive job the first time</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">unset</span><span class="w"> </span>WS_DIR<span class="w">                                </span><span class="c1"># forget the lab workspace in this shell</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">WS_NAME</span><span class="o">=</span>my-project
+<span class="nb">source</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/00_setup/setup_env.sh</code></pre></figure>
+<div class="callout warn"><p><strong>The course project is for the course.</strong> Jobs with <code>--account=p_scads_lv_llm</code> are booked on the course. For your thesis or your own research, ask your supervisor which HPC project to use and put its name there.</p></div>
+</article><aside class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#before-you-start">Before you start</a></li><li><a href="#the-four-steps">The four steps</a></li><li><a href="#the-setup-script">The setup script</a></li><li><a href="#where-to-run-the-notebooks">Where to run the notebooks</a></li><li><a href="#your-own-experiments">Your own experiments</a></li></ol></aside></div><nav class="pager wrap" aria-label="Previous and next page"><a class="pager-prev" href="clusters.html"><span>Previous</span>Clusters</a><a class="pager-next" href="lab.html"><span>Next</span>HPC lab</a></nav>
+</main>
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div>
+      <p class="foot-title"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="5" y="12" width="22" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11 16 4l11 7" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="19.5" r="2.4" fill="var(--amber)"/></svg> Behind the Secrets of LLMs</p>
+      <p>Lab material for the course <em>Behind the Secrets of Large Language Models</em> at TU Dresden (ScaDS.AI).</p>
+      <p class="foot-small">This site loads no trackers, no web fonts and no scripts from other servers. It is built from the repository with <code>website/build.py</code>.</p>
+    </div>
+    <div>
+      <p class="foot-head">The material</p>
+      <a href="https://github.com/himanshubeniwal/behind-llms-lab">GitHub repository</a>
+      <a href="https://github.com/himanshubeniwal/behind-llms-lab/archive/refs/heads/main.zip">Download everything (.zip)</a>
+      <a href="notebooks.html">Notebooks</a>
+      <a href="lab.html">HPC lab</a>
+    </div>
+    <div>
+      <p class="foot-head">Help with the cluster</p>
+      <a href="https://compendium.hpc.tu-dresden.de">ZIH HPC Compendium</a>
+      <a href="https://jupyterhub.hpc.tu-dresden.de">JupyterHub</a>
+      <a href="mailto:hpc-support@tu-dresden.de">hpc-support@tu-dresden.de</a>
+      <a href="cheatsheet.html">Cheat sheet</a>
+    </div>
+  </div>
+</footer>
+<script src="assets/site.js?v=f01bcb2a" defer></script><script src="assets/widgets.js?v=f01bcb2a" defer></script>
+</body>
+</html>

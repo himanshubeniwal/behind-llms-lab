@@ -1,0 +1,132 @@
+<!--
+title: Cheat sheet
+eyebrow: Keep this tab open
+lead: Every command of the lab on one page: Slurm, job scripts, workspaces, and what to do when something goes wrong.
+description: A cheat sheet for the ZIH clusters: Slurm commands, job states, SBATCH options, workspace commands, useful variables and troubleshooting.
+-->
+<h2>Log in</h2>
+<x-code lang="bash" title="you need the university network or the VPN">
+ssh <zih-login>@login1.alpha.hpc.tu-dresden.de      # GPU cluster, 8 A100 per node
+ssh <zih-login>@login1.capella.hpc.tu-dresden.de    # GPU cluster, 4 H100 per node
+ssh <zih-login>@login1.barnard.hpc.tu-dresden.de    # CPU cluster
+</x-code>
+<p>Every cluster has its own Slurm, so GPU jobs have to be sent from an Alpha or Capella login node. Our project (account) is <code>p_scads_lv_llm</code>.</p>
+
+<h2>Slurm commands</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>What you want</th><th>Command</th></tr></thead>
+  <tbody>
+    <tr><td>see partitions and free nodes</td><td class="wrap-code"><code>sinfo</code>, <code>sinfo -s</code>, <code>sinfo -o "%20P %5a %10l %6D %20G"</code></td></tr>
+    <tr><td>send a batch job</td><td class="wrap-code"><code>sbatch job.sbatch</code><br>Options on the command line win over <code>#SBATCH</code> lines.</td></tr>
+    <tr><td>a terminal on a compute node</td><td class="wrap-code"><code>srun --account=p_scads_lv_llm --ntasks=1 --cpus-per-task=2 --mem-per-cpu=2G --time=00:30:00 --pty bash -l</code></td></tr>
+    <tr><td>the same with a GPU</td><td class="wrap-code">add <code>--gres=gpu:1</code><br>On Alpha, for quick tests: <code>--partition=alpha-interactive</code></td></tr>
+    <tr><td>my jobs</td><td class="wrap-code"><code>squeue --me</code><br>with the expected start time: <code>squeue --me --start</code></td></tr>
+    <tr><td>why is my job waiting?</td><td class="wrap-code"><code>whypending &lt;jobid&gt;</code> (a ZIH helper) or <code>scontrol show job &lt;jobid&gt;</code></td></tr>
+    <tr><td>cancel</td><td class="wrap-code"><code>scancel &lt;jobid&gt;</code><br>one array task: <code>scancel &lt;jobid&gt;_3</code><br>all of mine: <code>scancel -u $USER</code></td></tr>
+    <tr><td>what did it use?</td><td class="wrap-code"><code>sacct -j &lt;jobid&gt; --format=JobID,JobName,State,Elapsed,MaxRSS,ExitCode</code></td></tr>
+    <tr><td>change the time limit</td><td class="wrap-code"><code>scontrol update timelimit=00:20:00 jobid=&lt;jobid&gt;</code><br>Normally you can only make it shorter.</td></tr>
+    <tr><td>watch a log while the job runs</td><td class="wrap-code"><code>tail -f logs/&lt;name&gt;-&lt;jobid&gt;.out</code><br>Ctrl+C stops <code>tail</code>, not the job.</td></tr>
+  </tbody>
+</table></div>
+
+<h3>Job states</h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Code</th><th>State</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>PD</code></td><td>pending</td><td>Waiting in the queue. The REASON column says why.</td></tr>
+    <tr><td><code>R</code></td><td>running</td><td>It has its resources and is working.</td></tr>
+    <tr><td><code>CG</code></td><td>completing</td><td>Finished, Slurm is cleaning up.</td></tr>
+    <tr><td><code>CD</code></td><td>completed</td><td>Ended without an error.</td></tr>
+    <tr><td><code>F</code></td><td>failed</td><td>The program ended with an error. Read the <code>.err</code> file.</td></tr>
+    <tr><td><code>CA</code></td><td>cancelled</td><td>Stopped with <code>scancel</code>.</td></tr>
+    <tr><td><code>TO</code></td><td>timeout</td><td>It hit the time limit.</td></tr>
+    <tr><td><code>OOM</code></td><td>out of memory</td><td>It used more memory than it asked for.</td></tr>
+  </tbody>
+</table></div>
+
+<h2>A job script, line by line</h2>
+<x-code lang="bash" title="a GPU job">
+#!/bin/bash
+#SBATCH --job-name=tinygpt            # the name you see in squeue
+#SBATCH --account=p_scads_lv_llm      # the project that pays for the time
+#SBATCH --ntasks=1                    # one process
+#SBATCH --cpus-per-task=6             # CPU cores that come with the GPU
+#SBATCH --gres=gpu:1                  # this is the line that gets you a GPU
+#SBATCH --mem=32G                     # memory for the whole job
+#SBATCH --time=00:30:00               # hard time limit, hh:mm:ss
+#SBATCH --signal=TERM@60              # send SIGTERM 60 s before the time limit
+#SBATCH --output=logs/%x-%j.out       # %x is the job name, %j the job ID
+#SBATCH --error=logs/%x-%j.err        # the logs folder has to exist before you submit
+
+source ~/behind-llms-lab/hpc_lab/00_setup/setup_env.sh    # workspace, modules, venv
+
+export SRUN_CPUS_PER_TASK=$SLURM_CPUS_PER_TASK            # pass all cores on to the program
+srun python -u my_script.py                               # -u: print without buffering
+</x-code>
+<div class="table-wrap"><table>
+  <thead><tr><th>Also useful</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>--mem-per-cpu=2G</code></td><td>Memory per core, instead of <code>--mem</code> for the whole job.</td></tr>
+    <tr><td><code>--array=0-3</code></td><td>Start the script 4 times. <code>$SLURM_ARRAY_TASK_ID</code> goes from 0 to 3. With <code>0-3%2</code> at most 2 run at the same time.</td></tr>
+    <tr><td><code>--output=logs/%x-%A_%a.out</code></td><td>For arrays: <code>%A</code> is the array job ID, <code>%a</code> the task number.</td></tr>
+    <tr><td><code>--dependency=afterok:&lt;jobid&gt;</code></td><td>Start only after another job has finished without errors.</td></tr>
+    <tr><td><code>--begin=now+5minutes</code></td><td>Do not start before this time.</td></tr>
+    <tr><td><code>--parsable</code></td><td>Make <code>sbatch</code> print only the job ID, to keep it in a shell variable.</td></tr>
+    <tr><td><code>--export=ALL,NAME=value</code></td><td>Hand an extra variable to the job.</td></tr>
+  </tbody>
+</table></div>
+
+<h3>Variables inside a job</h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Variable</th><th>Holds</th></tr></thead>
+  <tbody>
+    <tr><td><code>$SLURM_JOB_ID</code></td><td>The job ID.</td></tr>
+    <tr><td><code>$SLURM_CPUS_PER_TASK</code></td><td>The number of cores you asked for.</td></tr>
+    <tr><td><code>$SLURM_ARRAY_TASK_ID</code>, <code>$SLURM_ARRAY_JOB_ID</code></td><td>The number of this task in an array, and the ID of the whole array.</td></tr>
+    <tr><td><code>$SLURM_JOB_NODELIST</code></td><td>The node or nodes the job runs on.</td></tr>
+    <tr><td><code>$WS_DIR</code></td><td>Your workspace. Set by <code>setup_env.sh</code>, not by Slurm.</td></tr>
+    <tr><td><code>$HF_HOME</code></td><td>Where Hugging Face keeps models. <code>setup_env.sh</code> points it into the workspace.</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="workspaces">Workspaces</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>What you want</th><th>Command</th></tr></thead>
+  <tbody>
+    <tr><td>create or reuse</td><td class="wrap-code"><code>ws_allocate -F horse llm-lab 30</code><br>prints <code>/data/horse/ws/&lt;user&gt;-llm-lab</code></td></tr>
+    <tr><td>list</td><td><code>ws_list</code></td></tr>
+    <tr><td>extend</td><td class="wrap-code"><code>ws_extend -F horse llm-lab 30</code><br>This sets the remaining time to 30 days. It does not add 30 days.</td></tr>
+    <tr><td>delete</td><td class="wrap-code"><code>ws_release -F horse --name llm-lab</code></td></tr>
+    <tr><td>e-mail reminder</td><td class="wrap-code"><code>ws_allocate -F horse -r 7 -m &lt;you&gt;@tu-dresden.de llm-lab 30</code></td></tr>
+  </tbody>
+</table></div>
+<p>Keep data, models and caches out of <code>$HOME</code>. It is small and backed up, so it fills up fast.</p>
+
+<h2>The lab in ten lines</h2>
+<x-code lang="bash" title="after the setup, from behind-llms-lab/hpc_lab">
+cd 01_hello  && mkdir -p logs && sbatch hello.sbatch
+cd ../02_cancel && mkdir -p logs && sbatch sleepy.sbatch     # and then cancel it
+cd ../03_gpu    && mkdir -p logs && sbatch gpu.sbatch
+cd ../04_tinygpt && mkdir -p logs && sbatch train.sbatch
+cd ../05_sweep  && mkdir -p logs && source ../00_setup/setup_env.sh && ./submit_sweep.sh
+cd ../06_hf_generate && source ../00_setup/setup_env.sh && python generate.py --download-only
+mkdir -p logs && sbatch generate.sbatch
+</x-code>
+
+<h2 id="when-something-goes-wrong">When something goes wrong</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>What you see</th><th>What it usually is</th></tr></thead>
+  <tbody>
+    <tr><td>The job ends at once and there is no log file.</td><td>The <code>logs/</code> folder is missing. Run <code>mkdir -p logs</code>.</td></tr>
+    <tr><td><code>CUDA available: False</code></td><td>You forgot <code>--gres=gpu:1</code>, or you sent the job from Barnard.</td></tr>
+    <tr><td><code>Disk quota exceeded</code> in <code>$HOME</code></td><td>The pip or Hugging Face caches are in your home folder. <code>source 00_setup/setup_env.sh</code> moves them to the workspace.</td></tr>
+    <tr><td><code>module load</code> fails</td><td>Module versions change about twice a year. Run <code>module spider Python</code> and change <code>PY_MODULES</code> in <code>setup_env.sh</code>.</td></tr>
+    <tr><td><code>OUT_OF_MEMORY</code> in <code>sacct</code></td><td>Ask for more memory with <code>--mem</code>.</td></tr>
+    <tr><td>The job waits for a long time.</td><td>Ask for less time or fewer GPUs, and check <code>whypending &lt;jobid&gt;</code>.</td></tr>
+    <tr><td>The log stays empty while the job runs.</td><td>Python is buffering. Use <code>python -u</code> or <code>print(..., flush=True)</code>.</td></tr>
+    <tr><td><code>run 'source ../00_setup/setup_env.sh' first</code></td><td><code>$WS_DIR</code> is not set in this shell. Do what the message says.</td></tr>
+    <tr><td>A model cannot be found in a job with <code>HF_HUB_OFFLINE=1</code></td><td>It was never downloaded. On the login node: <code>python generate.py --download-only --model &lt;name&gt;</code>.</td></tr>
+    <tr><td><code>ssh</code> does not connect at all</td><td>You are not on the university network. Start the VPN.</td></tr>
+  </tbody>
+</table></div>
+<p>Documentation: <a href="https://compendium.hpc.tu-dresden.de">compendium.hpc.tu-dresden.de</a>. Support: <a href="mailto:hpc-support@tu-dresden.de">hpc-support@tu-dresden.de</a>.</p>

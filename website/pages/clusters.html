@@ -1,0 +1,169 @@
+<!--
+title: Meet the machines
+eyebrow: Step 1 · the servers
+lead: Training a language model is mostly multiplying very large matrices, very many times. A laptop can do that for a toy model. For everything else there is a room full of computers in Dresden, and you are allowed to use it.
+description: An introduction to the ZIH high performance computing clusters at TU Dresden: what a cluster is, the five clusters, login nodes, Slurm, workspaces and how to get access.
+-->
+<h2>What a cluster is</h2>
+<p class="lede">High performance computing, HPC for short, means using many strong computers together. The systems at TU Dresden are run by ZIH, the university's computing centre. They all run Linux, and you use them from a terminal.</p>
+<p>The most important thing to understand on day one: <strong>a cluster is not one big computer that you log in to and then use.</strong> It is hundreds of separate computers, called nodes, that many people share. You never start your work on them by hand. You describe what you need, and a scheduler finds a free place and runs it for you.</p>
+
+<div class="arch" role="img" aria-label="Your computer connects with ssh to a login node. From there you hand a job to the scheduler Slurm, which starts it on a compute node. Login and compute nodes share the same storage.">
+  <div class="arch-box"><b>Your computer</b><span>A terminal. On the university network or the VPN.</span></div>
+  <div class="arch-arrow" aria-hidden="true">→</div>
+  <div class="arch-box"><b>Login node</b><span>Where <code>ssh</code> takes you. Edit files, use git, send jobs. No heavy work here.</span></div>
+  <div class="arch-arrow" aria-hidden="true">→</div>
+  <div class="arch-box"><b>Slurm</b><span>The scheduler. It keeps the queue and decides which job runs where and when.</span></div>
+  <div class="arch-arrow" aria-hidden="true">→</div>
+  <div class="arch-box hot"><b>Compute nodes</b><span>Where your job really runs, with the CPU cores, memory and GPUs you asked for.</span></div>
+</div>
+<div class="arch-store"><b>Shared storage.</b> Login nodes and compute nodes see the same files: your small home folder and the big workspaces. That is how a job finds your code and how you find its results.</div>
+
+<h3>The four parts in one sentence each</h3>
+<ul>
+  <li><strong>Login node.</strong> The front door. Everybody shares it, so it is for light work only: editing, <code>git</code>, looking at results, sending jobs. A training run on a login node slows down everyone and can get stopped.</li>
+  <li><strong>Slurm.</strong> The batch system. You tell it how many cores, how much memory, how many GPUs and how much time you need. It puts your job in a queue and starts it when the resources are free.</li>
+  <li><strong>Compute node.</strong> One computer of the cluster. You do not log in to it. Slurm starts your program there.</li>
+  <li><strong>Job.</strong> One piece of work you hand to Slurm, usually as a small shell script with <code>#SBATCH</code> lines at the top. <a href="lab.html#ex1">Exercise 1</a> is exactly that.</li>
+</ul>
+
+<h2>Why a language model needs this</h2>
+<p>Inside every layer of a language model, the main work is a matrix multiplication. A GPU is a processor that does thousands of these small multiplications at the same time. In <a href="lab.html#ex3">exercise 3</a> you measure the difference yourself: the same multiplication, once on CPU cores and once on a GPU.</p>
+<p>The second reason is memory. A model has to fit into the memory of the GPU. The small chat model from <a href="lab.html#ex6">exercise 6</a> has 0.5 billion parameters and needs about 1 GB. The models people use at work are many times bigger. The GPUs here have 40 GB and 94 GB each.</p>
+<p>The third reason is that research means running things many times. A job array starts the same script with four learning rates on four GPUs at once (<a href="lab.html#ex5">exercise 5</a>). On a laptop you would wait four times as long.</p>
+
+<h2>The five clusters</h2>
+<p>ZIH runs five systems. Two are GPU clusters and those are the ones this lab uses. The numbers come from the <a href="https://compendium.hpc.tu-dresden.de/jobs_and_resources/hardware_overview/">hardware overview in the ZIH HPC Compendium</a> (checked in October 2026). Hardware changes, so look there for the current state.</p>
+
+<div class="clusters">
+  <article class="cluster used c-amber">
+    <header><h3>Alpha Centauri</h3><span class="tag gpu">GPU</span><span class="tag ok">used in this lab</span></header>
+    <p class="what">Built for AI and machine learning. Since 2021. We call it Alpha.</p>
+    <div class="node" aria-hidden="true"><x-repeat n="8"/><small>8 GPUs in one node</small></div>
+    <dl>
+      <dt>Nodes</dt><dd>39</dd>
+      <dt>GPUs</dt><dd>8 × NVIDIA A100 per node, 40 GB each. That is 312 GPUs.</dd>
+      <dt>CPUs</dt><dd>2 × AMD EPYC 7352 per node, 48 cores</dd>
+      <dt>Memory</dt><dd>1 TiB per node</dd>
+    </dl>
+    <p class="host">login1.alpha.hpc.tu-dresden.de<br>login2.alpha.hpc.tu-dresden.de</p>
+  </article>
+
+  <article class="cluster used c-amber">
+    <header><h3>Capella</h3><span class="tag gpu">GPU</span><span class="tag ok">used in this lab</span></header>
+    <p class="what">The newer GPU cluster, also built for AI and machine learning. Since 2024.</p>
+    <div class="node" aria-hidden="true"><x-repeat n="4"/><small>4 GPUs in one node</small></div>
+    <dl>
+      <dt>Nodes</dt><dd>156</dd>
+      <dt>GPUs</dt><dd>4 × NVIDIA H100 per node, 94 GB each. That is 624 GPUs.</dd>
+      <dt>CPUs</dt><dd>2 × AMD EPYC 9334 per node, 64 cores</dd>
+      <dt>Memory</dt><dd>768 GiB per node</dd>
+    </dl>
+    <p class="host">login1.capella.hpc.tu-dresden.de<br>login2.capella.hpc.tu-dresden.de</p>
+  </article>
+
+  <article class="cluster used c-cyan">
+    <header><h3>Barnard</h3><span class="tag cpu">CPU</span><span class="tag ok">fine for exercises 1 and 2</span></header>
+    <p class="what">The big general purpose cluster. No GPUs. Since 2023.</p>
+    <div class="node cpu" aria-hidden="true"><x-repeat n="13"/><small>104 cores in one node (1 mark = 8 cores)</small></div>
+    <dl>
+      <dt>Nodes</dt><dd>720</dd>
+      <dt>CPUs</dt><dd>2 × Intel Xeon Platinum 8470 per node, 104 cores. That is 74,880 cores.</dd>
+      <dt>Memory</dt><dd>512 GiB per node</dd>
+    </dl>
+    <p class="host">login1.barnard.hpc.tu-dresden.de<br>up to login4</p>
+  </article>
+
+  <article class="cluster">
+    <header><h3>Romeo</h3><span class="tag cpu">CPU</span></header>
+    <p class="what">A second general purpose CPU cluster. Since 2020. Not needed in this lab.</p>
+    <div class="node cpu" aria-hidden="true"><x-repeat n="16"/><small>128 cores in one node</small></div>
+    <dl>
+      <dt>Nodes</dt><dd>188</dd>
+      <dt>CPUs</dt><dd>2 × AMD EPYC 7702 per node, 128 cores</dd>
+      <dt>Memory</dt><dd>512 GiB per node</dd>
+    </dl>
+    <p class="host">login1.romeo.hpc.tu-dresden.de<br>login2.romeo.hpc.tu-dresden.de</p>
+  </article>
+
+  <article class="cluster" style="grid-column: 1 / -1">
+    <header><h3>Julia</h3><span class="tag smp">one huge machine</span></header>
+    <p class="what">Not a cluster of many nodes but a single computer with an enormous amount of memory, for programs that need everything in one place. Since 2021. Not needed in this lab.</p>
+    <div class="node cpu" aria-hidden="true"><x-repeat n="112"/><small>896 cores in one machine</small></div>
+    <dl>
+      <dt>Nodes</dt><dd>1</dd>
+      <dt>CPUs</dt><dd>32 × Intel Xeon Platinum 8276M, 896 cores</dd>
+      <dt>Memory</dt><dd>47 TiB usable</dd>
+    </dl>
+    <p class="host">julia.hpc.tu-dresden.de</p>
+  </article>
+</div>
+<p class="small">A sixth system, the GPU cluster Deneb, is announced for 2027.</p>
+
+<div class="callout warn">
+  <p><strong>Every cluster has its own Slurm.</strong> A job can only be sent from a login node of the cluster it should run on. A job sent from Barnard never gets a GPU, because Barnard has none. So for the GPU exercises, log in to Alpha or Capella.</p>
+</div>
+
+<h3>Which one should I take?</h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>You want to</th><th>Log in to</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>do the whole lab in one place</td><td><strong>Alpha</strong> or <strong>Capella</strong></td><td>All seven exercises work there.</td></tr>
+    <tr><td>try the first two exercises</td><td>any cluster</td><td>They only need a CPU core.</td></tr>
+    <tr><td>run a model that needs a lot of GPU memory</td><td><strong>Capella</strong></td><td>An H100 has 94 GB, an A100 has 40 GB.</td></tr>
+    <tr><td>test something quickly on a GPU</td><td><strong>Alpha</strong></td><td>It has a partition for short interactive tests: <code>--partition=alpha-interactive</code>.</td></tr>
+  </tbody>
+</table></div>
+
+<h2>Where your files live</h2>
+<p>There are two kinds of storage, and mixing them up is the most common beginner problem.</p>
+<div class="compare">
+  <div class="card"><h3>Your home folder</h3><p><code>$HOME</code> is permanent and backed up, and it is small. It is for your code and your settings. If pip or Hugging Face put their caches there, it is full after one afternoon and you get <code>Disk quota exceeded</code>.</p></div>
+  <div class="card"><h3>A workspace</h3><p>A big, fast folder that you ask for with one command. It has an expiry date, and you can extend it. This is where the Python environment, the data, the models and the results of this lab go.</p></div>
+</div>
+<x-code lang="bash" title="a workspace in one line">
+ws_allocate -F horse llm-lab 30        # prints /data/horse/ws/<zih-login>-llm-lab
+</x-code>
+<p>You do not have to type this yourself. The <a href="setup.html#the-setup-script">setup script</a> creates the workspace <code>llm-lab</code> for 30 days and moves all caches into it. <code>horse</code> is the name of a file system. There are several, and they differ in how long a workspace may live:</p>
+<div class="table-wrap"><table>
+  <thead><tr><th>File system</th><th class="num">Longest lifetime</th><th class="num">Extensions</th><th class="num">Kept after expiry</th><th>Where</th></tr></thead>
+  <tbody>
+    <tr><td><code>horse</code></td><td class="num">100 days</td><td class="num">10</td><td class="num">30 days</td><td>all clusters. This lab uses it.</td></tr>
+    <tr><td><code>walrus</code></td><td class="num">365 days</td><td class="num">2</td><td class="num">60 days</td><td>all clusters</td></tr>
+    <tr><td><code>cat</code></td><td class="num">30 days</td><td class="num">2</td><td class="num">30 days</td><td>Capella, where it is the default</td></tr>
+    <tr><td><code>quokka</code></td><td class="num">30 days</td><td class="num">2</td><td class="num">30 days</td><td>Alpha and Romeo</td></tr>
+  </tbody>
+</table></div>
+<p class="small">From the <a href="https://compendium.hpc.tu-dresden.de/data_lifecycle/workspaces/">workspaces page of the Compendium</a>, October 2026. The commands to list, extend and delete a workspace are on the <a href="cheatsheet.html#workspaces">cheat sheet</a>.</p>
+<div class="callout tip"><p><strong>A workspace ends.</strong> When the time is over the data is gone after the grace period. Copy what you want to keep, or extend the workspace in time with <code>ws_extend</code>. You can also ask for an e-mail reminder.</p></div>
+
+<h2>Three ways to work</h2>
+<div class="grid three">
+  <div class="card c-amber"><p class="eyebrow">the normal way</p><h3>A batch job</h3><p>You write a job script and send it with <code>sbatch</code>. It runs when there is room, with or without you. The output goes to a log file. All exercises work like this.</p></div>
+  <div class="card c-cyan"><p class="eyebrow">for trying things</p><h3>An interactive job</h3><p><code>srun --pty bash -l</code> gives you a terminal on a compute node. Good for installing, testing and debugging. The setup step uses it. Type <code>exit</code> to give the machine back.</p></div>
+  <div class="card c-violet"><p class="eyebrow">for notebooks</p><h3>JupyterHub</h3><p>At <a href="https://jupyterhub.hpc.tu-dresden.de">jupyterhub.hpc.tu-dresden.de</a> you start a notebook server on the cluster from the browser. The setup script adds a kernel called <em>LLM Lab (venv-llm)</em> for it.</p></div>
+</div>
+
+<h2>What you need to get in</h2>
+<ol>
+  <li><strong>A ZIH login.</strong> The same user name and password you use for other university services.</li>
+  <li><strong>Membership in the course project.</strong> On the cluster, computing time belongs to projects. Ours is called <code>p_scads_lv_llm</code>, and every job script names it with <code>--account</code>. You get the link to join from the instructors in the session. A new membership needs some time before it works on all clusters, so join first and read on while you wait.</li>
+  <li><strong>The university network or the VPN.</strong> The login nodes and JupyterHub cannot be reached from outside.</li>
+</ol>
+<p>Then continue with <a href="setup.html">Setup</a>. More about access is in the <a href="https://compendium.hpc.tu-dresden.de/access/overview/">Compendium</a>.</p>
+
+<h2>Words you will hear</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Word</th><th>What it means here</th></tr></thead>
+  <tbody>
+    <tr><td>node</td><td>One computer of a cluster.</td></tr>
+    <tr><td>core</td><td>One processor core. You ask for them with <code>--cpus-per-task</code>.</td></tr>
+    <tr><td>job</td><td>One piece of work you hand to Slurm. It gets a number, the job ID.</td></tr>
+    <tr><td>job script</td><td>A shell script whose first lines start with <code>#SBATCH</code> and say what the job needs.</td></tr>
+    <tr><td>project, account</td><td>The group that the computing time is booked on. Ours is <code>p_scads_lv_llm</code>.</td></tr>
+    <tr><td>partition</td><td>A group of nodes inside a cluster with its own limits.</td></tr>
+    <tr><td>walltime</td><td>The time limit of a job, as on a clock on the wall. When it is over, Slurm stops the job.</td></tr>
+    <tr><td>module</td><td>Software the cluster provides, switched on with <code>module load</code>.</td></tr>
+    <tr><td>workspace</td><td>A big folder with an expiry date.</td></tr>
+  </tbody>
+</table></div>

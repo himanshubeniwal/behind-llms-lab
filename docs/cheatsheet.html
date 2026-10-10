@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cheat sheet · Behind the Secrets of LLMs</title>
+<meta name="description" content="A cheat sheet for the ZIH clusters: Slurm commands, job states, SBATCH options, workspace commands, useful variables and troubleshooting.">
+<meta property="og:title" content="Cheat sheet · Behind the Secrets of LLMs">
+<meta property="og:description" content="A cheat sheet for the ZIH clusters: Slurm commands, job states, SBATCH options, workspace commands, useful variables and troubleshooting.">
+<meta property="og:type" content="website">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css?v=f01bcb2a">
+<script>(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t}catch(e){}})()</script>
+</head>
+<body class="page-cheatsheet">
+<a class="skip" href="#main">Skip to the content</a>
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="index.html"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="5" y="12" width="22" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11 16 4l11 7" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="19.5" r="2.4" fill="var(--amber)"/></svg><span class="brand-text"><b>Behind the Secrets of LLMs</b><i>lab</i></span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav">Menu</button>
+    <nav id="nav" class="nav" aria-label="Main"><a href="index.html">Overview</a><a href="clusters.html">Clusters</a><a href="setup.html">Setup</a><a href="lab.html">HPC lab</a><a href="crash-course.html">Crash course</a><a href="notebooks.html">Notebooks</a><a href="black-box.html">Black box</a><a href="cheatsheet.html" aria-current="page">Cheat sheet</a></nav>
+    <div class="top-tools">
+      <a class="icon-btn" href="https://github.com/himanshubeniwal/behind-llms-lab" aria-label="The repository on GitHub" title="GitHub repository"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg></a>
+      <button class="icon-btn theme-toggle" type="button" aria-label="Switch between dark and light" title="Dark or light"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 0 18V3Z"/><circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+    </div>
+  </div>
+</header>
+<main id="main">
+<header class="page-hero"><div class="wrap"><p class="eyebrow">Keep this tab open</p><h1>Cheat sheet</h1><p class="lead">Every command of the lab on one page: Slurm, job scripts, workspaces, and what to do when something goes wrong.</p></div></header><div class="wrap layout has-toc"><article class="prose">
+<h2 id="log-in">Log in<a class="anchor" href="#log-in" aria-label="Link to this section">#</a></h2>
+<figure class="code "><figcaption><span class="code-title">you need the university network or the VPN</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">ssh<span class="w"> </span><span class="zih">&lt;zih-login&gt;</span>@login1.alpha.hpc.tu-dresden.de<span class="w">      </span><span class="c1"># GPU cluster, 8 A100 per node</span>
+ssh<span class="w"> </span><span class="zih">&lt;zih-login&gt;</span>@login1.capella.hpc.tu-dresden.de<span class="w">    </span><span class="c1"># GPU cluster, 4 H100 per node</span>
+ssh<span class="w"> </span><span class="zih">&lt;zih-login&gt;</span>@login1.barnard.hpc.tu-dresden.de<span class="w">    </span><span class="c1"># CPU cluster</span></code></pre></figure>
+<p>Every cluster has its own Slurm, so GPU jobs have to be sent from an Alpha or Capella login node. Our project (account) is <code>p_scads_lv_llm</code>.</p>
+
+<h2 id="slurm-commands">Slurm commands<a class="anchor" href="#slurm-commands" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>What you want</th><th>Command</th></tr></thead>
+  <tbody>
+    <tr><td>see partitions and free nodes</td><td class="wrap-code"><code>sinfo</code>, <code>sinfo -s</code>, <code>sinfo -o "%20P %5a %10l %6D %20G"</code></td></tr>
+    <tr><td>send a batch job</td><td class="wrap-code"><code>sbatch job.sbatch</code><br>Options on the command line win over <code>#SBATCH</code> lines.</td></tr>
+    <tr><td>a terminal on a compute node</td><td class="wrap-code"><code>srun --account=p_scads_lv_llm --ntasks=1 --cpus-per-task=2 --mem-per-cpu=2G --time=00:30:00 --pty bash -l</code></td></tr>
+    <tr><td>the same with a GPU</td><td class="wrap-code">add <code>--gres=gpu:1</code><br>On Alpha, for quick tests: <code>--partition=alpha-interactive</code></td></tr>
+    <tr><td>my jobs</td><td class="wrap-code"><code>squeue --me</code><br>with the expected start time: <code>squeue --me --start</code></td></tr>
+    <tr><td>why is my job waiting?</td><td class="wrap-code"><code>whypending &lt;jobid&gt;</code> (a ZIH helper) or <code>scontrol show job &lt;jobid&gt;</code></td></tr>
+    <tr><td>cancel</td><td class="wrap-code"><code>scancel &lt;jobid&gt;</code><br>one array task: <code>scancel &lt;jobid&gt;_3</code><br>all of mine: <code>scancel -u $USER</code></td></tr>
+    <tr><td>what did it use?</td><td class="wrap-code"><code>sacct -j &lt;jobid&gt; --format=JobID,JobName,State,Elapsed,MaxRSS,ExitCode</code></td></tr>
+    <tr><td>change the time limit</td><td class="wrap-code"><code>scontrol update timelimit=00:20:00 jobid=&lt;jobid&gt;</code><br>Normally you can only make it shorter.</td></tr>
+    <tr><td>watch a log while the job runs</td><td class="wrap-code"><code>tail -f logs/&lt;name&gt;-&lt;jobid&gt;.out</code><br>Ctrl+C stops <code>tail</code>, not the job.</td></tr>
+  </tbody>
+</table></div>
+
+<h3>Job states</h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Code</th><th>State</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>PD</code></td><td>pending</td><td>Waiting in the queue. The REASON column says why.</td></tr>
+    <tr><td><code>R</code></td><td>running</td><td>It has its resources and is working.</td></tr>
+    <tr><td><code>CG</code></td><td>completing</td><td>Finished, Slurm is cleaning up.</td></tr>
+    <tr><td><code>CD</code></td><td>completed</td><td>Ended without an error.</td></tr>
+    <tr><td><code>F</code></td><td>failed</td><td>The program ended with an error. Read the <code>.err</code> file.</td></tr>
+    <tr><td><code>CA</code></td><td>cancelled</td><td>Stopped with <code>scancel</code>.</td></tr>
+    <tr><td><code>TO</code></td><td>timeout</td><td>It hit the time limit.</td></tr>
+    <tr><td><code>OOM</code></td><td>out of memory</td><td>It used more memory than it asked for.</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="a-job-script-line-by-line">A job script, line by line<a class="anchor" href="#a-job-script-line-by-line" aria-label="Link to this section">#</a></h2>
+<figure class="code "><figcaption><span class="code-title">a GPU job</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">tinygpt</span>            <span class="c1"># the name you see in squeue</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_scads_lv_llm</span>      <span class="c1"># the project that pays for the time</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>                    <span class="c1"># one process</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">6</span>             <span class="c1"># CPU cores that come with the GPU</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--gres</span>=<span class="sbv">gpu:1</span>                  <span class="c1"># this is the line that gets you a GPU</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--mem</span>=<span class="sbv">32G</span>                     <span class="c1"># memory for the whole job</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--time</span>=<span class="sbv">00:30:00</span>               <span class="c1"># hard time limit, hh:mm:ss</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--signal</span>=<span class="sbv">TERM@60</span>              <span class="c1"># send SIGTERM 60 s before the time limit</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--output</span>=<span class="sbv">logs/%x-%j.out</span>       <span class="c1"># %x is the job name, %j the job ID</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--error</span>=<span class="sbv">logs/%x-%j.err</span>        <span class="c1"># the logs folder has to exist before you submit</span>
+
+<span class="nb">source</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/00_setup/setup_env.sh<span class="w">    </span><span class="c1"># workspace, modules, venv</span>
+
+<span class="nb">export</span><span class="w"> </span><span class="nv">SRUN_CPUS_PER_TASK</span><span class="o">=</span><span class="nv">$SLURM_CPUS_PER_TASK</span><span class="w">            </span><span class="c1"># pass all cores on to the program</span>
+srun<span class="w"> </span>python<span class="w"> </span>-u<span class="w"> </span>my_script.py<span class="w">                               </span><span class="c1"># -u: print without buffering</span></code></pre></figure>
+<div class="table-wrap"><table>
+  <thead><tr><th>Also useful</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>--mem-per-cpu=2G</code></td><td>Memory per core, instead of <code>--mem</code> for the whole job.</td></tr>
+    <tr><td><code>--array=0-3</code></td><td>Start the script 4 times. <code>$SLURM_ARRAY_TASK_ID</code> goes from 0 to 3. With <code>0-3%2</code> at most 2 run at the same time.</td></tr>
+    <tr><td><code>--output=logs/%x-%A_%a.out</code></td><td>For arrays: <code>%A</code> is the array job ID, <code>%a</code> the task number.</td></tr>
+    <tr><td><code>--dependency=afterok:&lt;jobid&gt;</code></td><td>Start only after another job has finished without errors.</td></tr>
+    <tr><td><code>--begin=now+5minutes</code></td><td>Do not start before this time.</td></tr>
+    <tr><td><code>--parsable</code></td><td>Make <code>sbatch</code> print only the job ID, to keep it in a shell variable.</td></tr>
+    <tr><td><code>--export=ALL,NAME=value</code></td><td>Hand an extra variable to the job.</td></tr>
+  </tbody>
+</table></div>
+
+<h3>Variables inside a job</h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Variable</th><th>Holds</th></tr></thead>
+  <tbody>
+    <tr><td><code>$SLURM_JOB_ID</code></td><td>The job ID.</td></tr>
+    <tr><td><code>$SLURM_CPUS_PER_TASK</code></td><td>The number of cores you asked for.</td></tr>
+    <tr><td><code>$SLURM_ARRAY_TASK_ID</code>, <code>$SLURM_ARRAY_JOB_ID</code></td><td>The number of this task in an array, and the ID of the whole array.</td></tr>
+    <tr><td><code>$SLURM_JOB_NODELIST</code></td><td>The node or nodes the job runs on.</td></tr>
+    <tr><td><code>$WS_DIR</code></td><td>Your workspace. Set by <code>setup_env.sh</code>, not by Slurm.</td></tr>
+    <tr><td><code>$HF_HOME</code></td><td>Where Hugging Face keeps models. <code>setup_env.sh</code> points it into the workspace.</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="workspaces">Workspaces<a class="anchor" href="#workspaces" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>What you want</th><th>Command</th></tr></thead>
+  <tbody>
+    <tr><td>create or reuse</td><td class="wrap-code"><code>ws_allocate -F horse llm-lab 30</code><br>prints <code>/data/horse/ws/&lt;user&gt;-llm-lab</code></td></tr>
+    <tr><td>list</td><td><code>ws_list</code></td></tr>
+    <tr><td>extend</td><td class="wrap-code"><code>ws_extend -F horse llm-lab 30</code><br>This sets the remaining time to 30 days. It does not add 30 days.</td></tr>
+    <tr><td>delete</td><td class="wrap-code"><code>ws_release -F horse --name llm-lab</code></td></tr>
+    <tr><td>e-mail reminder</td><td class="wrap-code"><code>ws_allocate -F horse -r 7 -m &lt;you&gt;@tu-dresden.de llm-lab 30</code></td></tr>
+  </tbody>
+</table></div>
+<p>Keep data, models and caches out of <code>$HOME</code>. It is small and backed up, so it fills up fast.</p>
+
+<h2 id="the-lab-in-ten-lines">The lab in ten lines<a class="anchor" href="#the-lab-in-ten-lines" aria-label="Link to this section">#</a></h2>
+<figure class="code "><figcaption><span class="code-title">after the setup, from behind-llms-lab/hpc_lab</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>01_hello<span class="w">  </span><span class="o">&amp;&amp;</span><span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sbatch<span class="w"> </span>hello.sbatch
+<span class="nb">cd</span><span class="w"> </span>../02_cancel<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sbatch<span class="w"> </span>sleepy.sbatch<span class="w">     </span><span class="c1"># and then cancel it</span>
+<span class="nb">cd</span><span class="w"> </span>../03_gpu<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sbatch<span class="w"> </span>gpu.sbatch
+<span class="nb">cd</span><span class="w"> </span>../04_tinygpt<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sbatch<span class="w"> </span>train.sbatch
+<span class="nb">cd</span><span class="w"> </span>../05_sweep<span class="w">  </span><span class="o">&amp;&amp;</span><span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>../00_setup/setup_env.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./submit_sweep.sh
+<span class="nb">cd</span><span class="w"> </span>../06_hf_generate<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>../00_setup/setup_env.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>python<span class="w"> </span>generate.py<span class="w"> </span>--download-only
+mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sbatch<span class="w"> </span>generate.sbatch</code></pre></figure>
+
+<h2 id="when-something-goes-wrong">When something goes wrong<a class="anchor" href="#when-something-goes-wrong" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>What you see</th><th>What it usually is</th></tr></thead>
+  <tbody>
+    <tr><td>The job ends at once and there is no log file.</td><td>The <code>logs/</code> folder is missing. Run <code>mkdir -p logs</code>.</td></tr>
+    <tr><td><code>CUDA available: False</code></td><td>You forgot <code>--gres=gpu:1</code>, or you sent the job from Barnard.</td></tr>
+    <tr><td><code>Disk quota exceeded</code> in <code>$HOME</code></td><td>The pip or Hugging Face caches are in your home folder. <code>source 00_setup/setup_env.sh</code> moves them to the workspace.</td></tr>
+    <tr><td><code>module load</code> fails</td><td>Module versions change about twice a year. Run <code>module spider Python</code> and change <code>PY_MODULES</code> in <code>setup_env.sh</code>.</td></tr>
+    <tr><td><code>OUT_OF_MEMORY</code> in <code>sacct</code></td><td>Ask for more memory with <code>--mem</code>.</td></tr>
+    <tr><td>The job waits for a long time.</td><td>Ask for less time or fewer GPUs, and check <code>whypending &lt;jobid&gt;</code>.</td></tr>
+    <tr><td>The log stays empty while the job runs.</td><td>Python is buffering. Use <code>python -u</code> or <code>print(..., flush=True)</code>.</td></tr>
+    <tr><td><code>run 'source ../00_setup/setup_env.sh' first</code></td><td><code>$WS_DIR</code> is not set in this shell. Do what the message says.</td></tr>
+    <tr><td>A model cannot be found in a job with <code>HF_HUB_OFFLINE=1</code></td><td>It was never downloaded. On the login node: <code>python generate.py --download-only --model &lt;name&gt;</code>.</td></tr>
+    <tr><td><code>ssh</code> does not connect at all</td><td>You are not on the university network. Start the VPN.</td></tr>
+  </tbody>
+</table></div>
+<p>Documentation: <a href="https://compendium.hpc.tu-dresden.de">compendium.hpc.tu-dresden.de</a>. Support: <a href="mailto:hpc-support@tu-dresden.de">hpc-support@tu-dresden.de</a>.</p>
+</article><aside class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#log-in">Log in</a></li><li><a href="#slurm-commands">Slurm commands</a></li><li><a href="#a-job-script-line-by-line">A job script, line by line</a></li><li><a href="#workspaces">Workspaces</a></li><li><a href="#the-lab-in-ten-lines">The lab in ten lines</a></li><li><a href="#when-something-goes-wrong">When something goes wrong</a></li></ol></aside></div><nav class="pager wrap" aria-label="Previous and next page"><a class="pager-prev" href="black-box.html"><span>Previous</span>Black box</a><span></span></nav>
+</main>
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div>
+      <p class="foot-title"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="5" y="12" width="22" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11 16 4l11 7" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="19.5" r="2.4" fill="var(--amber)"/></svg> Behind the Secrets of LLMs</p>
+      <p>Lab material for the course <em>Behind the Secrets of Large Language Models</em> at TU Dresden (ScaDS.AI).</p>
+      <p class="foot-small">This site loads no trackers, no web fonts and no scripts from other servers. It is built from the repository with <code>website/build.py</code>.</p>
+    </div>
+    <div>
+      <p class="foot-head">The material</p>
+      <a href="https://github.com/himanshubeniwal/behind-llms-lab">GitHub repository</a>
+      <a href="https://github.com/himanshubeniwal/behind-llms-lab/archive/refs/heads/main.zip">Download everything (.zip)</a>
+      <a href="notebooks.html">Notebooks</a>
+      <a href="lab.html">HPC lab</a>
+    </div>
+    <div>
+      <p class="foot-head">Help with the cluster</p>
+      <a href="https://compendium.hpc.tu-dresden.de">ZIH HPC Compendium</a>
+      <a href="https://jupyterhub.hpc.tu-dresden.de">JupyterHub</a>
+      <a href="mailto:hpc-support@tu-dresden.de">hpc-support@tu-dresden.de</a>
+      <a href="cheatsheet.html">Cheat sheet</a>
+    </div>
+  </div>
+</footer>
+<script src="assets/site.js?v=f01bcb2a" defer></script>
+</body>
+</html>
