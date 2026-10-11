@@ -9,7 +9,7 @@
 # $SLURM_ARRAY_TASK_ID, which goes from 0 to 3.
 #
 #SBATCH --job-name=lr-sweep
-#SBATCH --account=p_scads_lv_llm
+#SBATCH --account=p_lv_llmsecrets
 #SBATCH --array=0-3                   # 4 tasks; with 0-3%2 at most 2 run at the same time
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6

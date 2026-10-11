@@ -7,7 +7,7 @@ widgets: yes
 -->
 <h2>Before you start</h2>
 <ul>
-  <li>You have a <strong>ZIH login</strong> and you joined the course project <code>p_scads_lv_llm</code>.</li>
+  <li>You have a <strong>ZIH login</strong> and you joined the course project <code>p_lv_llmsecrets</code>.</li>
   <li>You are on the <strong>university network or the VPN</strong>.</li>
   <li>You have a <strong>terminal</strong>: Terminal on macOS and Linux, PowerShell or Windows Terminal on Windows. All of them know <code>ssh</code>.</li>
 </ul>
@@ -66,7 +66,7 @@ cd behind-llms-lab/hpc_lab
     <h3>Build the Python environment</h3>
     <p>Installing PyTorch is real work, so it does not belong on the login node. Ask Slurm for a small interactive job, run the setup script there, and give the machine back.</p>
 <x-code lang="bash" title="on the login node">
-srun --account=p_scads_lv_llm --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G \
+srun --account=p_lv_llmsecrets --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G \
      --time=00:45:00 --pty bash -l          # a small interactive job
 cd ~/behind-llms-lab/hpc_lab
 source 00_setup/setup_env.sh                # workspace, venv, training text
@@ -136,7 +136,7 @@ cat logs/hello-hpc-*.out                    # when the job is gone from the queu
   <li><strong>Send it and watch it.</strong> <code>sbatch</code>, <code>squeue --me</code>, <code>tail -f logs/…</code>. The <a href="cheatsheet.html">cheat sheet</a> has the rest.</li>
 </ol>
 <x-code lang="bash" title="add a package to the lab environment">
-srun --account=p_scads_lv_llm --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G --time=00:30:00 --pty bash -l
+srun --account=p_lv_llmsecrets --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G --time=00:30:00 --pty bash -l
 source ~/behind-llms-lab/hpc_lab/00_setup/setup_env.sh
 pip install datasets                        # or whatever you need
 exit
@@ -161,4 +161,4 @@ unset WS_DIR                                # forget the lab workspace in this s
 export WS_NAME=my-project
 source ~/behind-llms-lab/hpc_lab/00_setup/setup_env.sh
 </x-code>
-<div class="callout warn"><p><strong>The course project is for the course.</strong> Jobs with <code>--account=p_scads_lv_llm</code> are booked on the course. For your thesis or your own research, ask your supervisor which HPC project to use and put its name there.</p></div>
+<div class="callout warn"><p><strong>The course project is for the course.</strong> Jobs with <code>--account=p_lv_llmsecrets</code> are booked on the course. For your thesis or your own research, ask your supervisor which HPC project to use and put its name there.</p></div>

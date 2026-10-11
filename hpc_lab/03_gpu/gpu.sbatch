@@ -9,7 +9,7 @@
 # Every cluster has its own Slurm, so a job sent from Barnard never gets a GPU.
 #
 #SBATCH --job-name=gpu-check
-#SBATCH --account=p_scads_lv_llm
+#SBATCH --account=p_lv_llmsecrets
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6             # CPU cores that come with the GPU
 #SBATCH --gres=gpu:1                  # this is the line that gets you a GPU

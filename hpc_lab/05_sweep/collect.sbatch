@@ -4,7 +4,7 @@
 # so it only starts after all array tasks have finished without errors.
 #
 #SBATCH --job-name=lr-collect
-#SBATCH --account=p_scads_lv_llm
+#SBATCH --account=p_lv_llmsecrets
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=1G

@@ -13,7 +13,7 @@
 #   sbatch --cpus-per-task=8 hello.sbatch
 #
 #SBATCH --job-name=hello-hpc          # the name you see in squeue
-#SBATCH --account=p_scads_lv_llm      # our course project, it pays for the CPU time
+#SBATCH --account=p_lv_llmsecrets      # our course project, it pays for the CPU time
 #SBATCH --ntasks=1                    # one process
 #SBATCH --cpus-per-task=4             # with 4 cores
 #SBATCH --mem-per-cpu=1G              # memory per core

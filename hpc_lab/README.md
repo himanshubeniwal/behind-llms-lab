@@ -13,7 +13,7 @@ Python script and the Slurm job script that runs it.
 | `05_sweep` | job arrays (`--array`) and dependencies (`--dependency=afterok`) | Alpha or Capella |
 | `06_hf_generate` | run a pretrained LLM from Hugging Face on a GPU node | Alpha or Capella |
 
-Our project (account) is **`p_scads_lv_llm`**.
+Our project (account) is **`p_lv_llmsecrets`**.
 
 ## 1. Log in
 
@@ -37,7 +37,7 @@ cd behind-llms-lab/hpc_lab
 ## 2. Set up Python once (about 10 minutes)
 
 ```bash
-srun --account=p_scads_lv_llm --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G \
+srun --account=p_lv_llmsecrets --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G \
      --time=00:45:00 --pty bash -l          # a small interactive job
 cd ~/behind-llms-lab/hpc_lab
 source 00_setup/setup_env.sh                # workspace, venv, training text
@@ -65,7 +65,7 @@ mkdir -p logs && sbatch generate.sbatch
 |---|---|
 | see partitions and free nodes | `sinfo`, `sinfo -s`, `sinfo -o "%20P %5a %10l %6D %20G"` |
 | send a batch job | `sbatch job.sbatch` (options on the command line win over `#SBATCH` lines) |
-| a terminal on a compute node | `srun --account=p_scads_lv_llm --ntasks=1 --cpus-per-task=2 --mem-per-cpu=2G --time=00:30:00 --pty bash -l` |
+| a terminal on a compute node | `srun --account=p_lv_llmsecrets --ntasks=1 --cpus-per-task=2 --mem-per-cpu=2G --time=00:30:00 --pty bash -l` |
 | the same with a GPU | add `--gres=gpu:1` (on Alpha, for quick tests: `--partition=alpha-interactive`) |
 | my jobs | `squeue --me`, and the expected start time with `squeue --me --start` |
 | why is my job waiting? | `whypending <jobid>` (a ZIH helper) or `scontrol show job <jobid>` |

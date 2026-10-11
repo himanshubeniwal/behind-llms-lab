@@ -10,7 +10,7 @@
 <meta property="og:type" content="website">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="assets/site.css?v=1be53eb1">
+<link rel="stylesheet" href="assets/site.css?v=a0add7ec">
 <script>(function(){try{if(localStorage.getItem("theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}})()</script>
 </head>
 <body class="page-setup">
@@ -30,7 +30,7 @@
 <header class="page-hero"><div class="wrap"><p class="eyebrow">Step 2 · do this once</p><h1>Get set up</h1><p class="lead">Four steps take you from your own terminal to a working Python environment with PyTorch on the cluster. After that, every job script switches the environment on by itself.</p></div></header><div class="wrap layout has-toc"><article class="prose">
 <h2 id="before-you-start">Before you start<a class="anchor" href="#before-you-start" aria-label="Link to this section">#</a></h2>
 <ul>
-  <li>You have a <strong>ZIH login</strong> and you joined the course project <code>p_scads_lv_llm</code>.</li>
+  <li>You have a <strong>ZIH login</strong> and you joined the course project <code>p_lv_llmsecrets</code>.</li>
   <li>You are on the <strong>university network or the VPN</strong>.</li>
   <li>You have a <strong>terminal</strong>: Terminal on macOS and Linux, PowerShell or Windows Terminal on Windows. All of them know <code>ssh</code>.</li>
 </ul>
@@ -78,7 +78,7 @@ ssh<span class="w"> </span><span class="zih">&lt;zih-login&gt;</span>@login1.alp
   <li>
     <h3>Build the Python environment</h3>
     <p>Installing PyTorch is real work, so it does not belong on the login node. Ask Slurm for a small interactive job, run the setup script there, and give the machine back.</p>
-<figure class="code "><figcaption><span class="code-title">on the login node</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">srun<span class="w"> </span>--account<span class="o">=</span>p_scads_lv_llm<span class="w"> </span>--ntasks<span class="o">=</span><span class="m">1</span><span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">4</span><span class="w"> </span>--mem-per-cpu<span class="o">=</span>2G<span class="w"> </span><span class="se">\</span>
+<figure class="code "><figcaption><span class="code-title">on the login node</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">srun<span class="w"> </span>--account<span class="o">=</span>p_lv_llmsecrets<span class="w"> </span>--ntasks<span class="o">=</span><span class="m">1</span><span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">4</span><span class="w"> </span>--mem-per-cpu<span class="o">=</span>2G<span class="w"> </span><span class="se">\</span>
 <span class="w">     </span>--time<span class="o">=</span><span class="m">00</span>:45:00<span class="w"> </span>--pty<span class="w"> </span>bash<span class="w"> </span>-l<span class="w">          </span><span class="c1"># a small interactive job</span>
 <span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab
 <span class="nb">source</span><span class="w"> </span>00_setup/setup_env.sh<span class="w">                </span><span class="c1"># workspace, venv, training text</span>
@@ -119,7 +119,7 @@ cat<span class="w"> </span>logs/hello-hpc-*.out<span class="w">                 
 <span class="c1"># The first time it installs packages, which takes 5 to 10 minutes. Do that inside</span>
 <span class="c1"># a small interactive job, not on the login node:</span>
 <span class="c1">#</span>
-<span class="c1">#     srun --account=p_scads_lv_llm --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G \</span>
+<span class="c1">#     srun --account=p_lv_llmsecrets --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G \</span>
 <span class="c1">#          --time=00:45:00 --pty bash -l</span>
 <span class="c1">#     source 00_setup/setup_env.sh</span>
 <span class="c1">#</span>
@@ -228,7 +228,7 @@ mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;</
   <li><strong>Write a job script.</strong> Copy the one from the exercise that is closest to what you want and change the last line, or use the generator below.</li>
   <li><strong>Send it and watch it.</strong> <code>sbatch</code>, <code>squeue --me</code>, <code>tail -f logs/…</code>. The <a href="cheatsheet.html">cheat sheet</a> has the rest.</li>
 </ol>
-<figure class="code "><figcaption><span class="code-title">add a package to the lab environment</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">srun<span class="w"> </span>--account<span class="o">=</span>p_scads_lv_llm<span class="w"> </span>--ntasks<span class="o">=</span><span class="m">1</span><span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">4</span><span class="w"> </span>--mem-per-cpu<span class="o">=</span>2G<span class="w"> </span>--time<span class="o">=</span><span class="m">00</span>:30:00<span class="w"> </span>--pty<span class="w"> </span>bash<span class="w"> </span>-l
+<figure class="code "><figcaption><span class="code-title">add a package to the lab environment</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">srun<span class="w"> </span>--account<span class="o">=</span>p_lv_llmsecrets<span class="w"> </span>--ntasks<span class="o">=</span><span class="m">1</span><span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">4</span><span class="w"> </span>--mem-per-cpu<span class="o">=</span>2G<span class="w"> </span>--time<span class="o">=</span><span class="m">00</span>:30:00<span class="w"> </span>--pty<span class="w"> </span>bash<span class="w"> </span>-l
 <span class="nb">source</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/00_setup/setup_env.sh
 pip<span class="w"> </span>install<span class="w"> </span>datasets<span class="w">                        </span><span class="c1"># or whatever you need</span>
 <span class="nb">exit</span></code></pre></figure>
@@ -250,7 +250,7 @@ pip<span class="w"> </span>install<span class="w"> </span>datasets<span class="w
 <figure class="code "><figcaption><span class="code-title">on the login node, inside an interactive job the first time</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">unset</span><span class="w"> </span>WS_DIR<span class="w">                                </span><span class="c1"># forget the lab workspace in this shell</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">WS_NAME</span><span class="o">=</span>my-project
 <span class="nb">source</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/00_setup/setup_env.sh</code></pre></figure>
-<div class="callout warn"><p><strong>The course project is for the course.</strong> Jobs with <code>--account=p_scads_lv_llm</code> are booked on the course. For your thesis or your own research, ask your supervisor which HPC project to use and put its name there.</p></div>
+<div class="callout warn"><p><strong>The course project is for the course.</strong> Jobs with <code>--account=p_lv_llmsecrets</code> are booked on the course. For your thesis or your own research, ask your supervisor which HPC project to use and put its name there.</p></div>
 </article><aside class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#before-you-start">Before you start</a></li><li><a href="#the-four-steps">The four steps</a></li><li><a href="#the-setup-script">The setup script</a></li><li><a href="#where-to-run-the-notebooks">Where to run the notebooks</a></li><li><a href="#your-own-experiments">Your own experiments</a></li></ol></aside></div><nav class="pager wrap" aria-label="Previous and next page"><a class="pager-prev" href="clusters.html"><span>Previous</span>Clusters</a><a class="pager-next" href="lab.html"><span>Next</span>HPC lab</a></nav>
 </main>
 <footer class="foot">
@@ -276,6 +276,6 @@ pip<span class="w"> </span>install<span class="w"> </span>datasets<span class="w
     </div>
   </div>
 </footer>
-<script src="assets/site.js?v=1be53eb1" defer></script><script src="assets/widgets.js?v=1be53eb1" defer></script>
+<script src="assets/site.js?v=a0add7ec" defer></script><script src="assets/widgets.js?v=a0add7ec" defer></script>
 </body>
 </html>

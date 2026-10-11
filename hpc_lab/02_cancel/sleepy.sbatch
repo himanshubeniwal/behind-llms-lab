@@ -15,7 +15,7 @@
 #   whypending <jobid>                   # ZIH helper that explains why a job waits
 #
 #SBATCH --job-name=sleepy
-#SBATCH --account=p_scads_lv_llm
+#SBATCH --account=p_lv_llmsecrets
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=500M

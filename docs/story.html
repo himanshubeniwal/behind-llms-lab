@@ -10,7 +10,7 @@
 <meta property="og:type" content="website">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="assets/site.css?v=1be53eb1">
+<link rel="stylesheet" href="assets/site.css?v=a0add7ec">
 <script>(function(){try{if(localStorage.getItem("theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}})()</script>
 </head>
 <body class="page-story">
@@ -66,7 +66,7 @@
       <div class="take-head"><span class="who"><i class="avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m15 15 5 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></i><b>Marie</b></span><span class="verdict good">works</span></div>
       <div class="take-body">
         <p>Marie asks Slurm for a small machine and lets the setup script do the rest.</p>
-<figure class="code term"><figcaption><span class="code-title">on the login node</span><span class="code-lang">terminal</span></figcaption><pre tabindex="0"><code><span class="t-pr">$</span> <span class="t-cmd">srun --account=p_scads_lv_llm --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G --time=00:45:00 --pty bash -l</span>
+<figure class="code term"><figcaption><span class="code-title">on the login node</span><span class="code-lang">terminal</span></figcaption><pre tabindex="0"><code><span class="t-pr">$</span> <span class="t-cmd">srun --account=p_lv_llmsecrets --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G --time=00:45:00 --pty bash -l</span>
 <span class="t-pr">$</span> <span class="t-cmd">cd ~/behind-llms-lab/hpc_lab</span>
 <span class="t-pr">$</span> <span class="t-cmd">source 00_setup/setup_env.sh</span>
 <span class="t-out">workspace : /data/horse/ws/<span class="zih">&lt;zih-login&gt;</span>-llm-lab</span>
@@ -392,6 +392,6 @@
     </div>
   </div>
 </footer>
-<script src="assets/site.js?v=1be53eb1" defer></script>
+<script src="assets/site.js?v=a0add7ec" defer></script>
 </body>
 </html>

@@ -289,7 +289,7 @@
     function field(label, input, wide) { return el("label", { class: "field" + (wide ? " wide" : "") }, [label, input]); }
     function text(value) { return el("input", { type: "text", value: value, spellcheck: "false" }); }
     var f = {
-      name: text("my-experiment"), account: text("p_scads_lv_llm"),
+      name: text("my-experiment"), account: text("p_lv_llmsecrets"),
       cluster: el("select", {}, Object.keys(CLUSTERS).map(function (k) { return el("option", { value: k, text: CLUSTERS[k].name }); })),
       gpus: el("input", { type: "number", min: 0, max: 8, value: 1 }), cpus: el("input", { type: "number", min: 1, max: 64, value: 6 }),
       mem: el("input", { type: "number", min: 1, max: 512, value: 32 }), time: text("01:00:00"), array: text(""),
@@ -307,7 +307,7 @@
       var name = safe(f.name.value.trim(), /^[\w.-]{1,60}$/, "my-experiment");
       var array = f.array.value.trim(), lines = ["#!/bin/bash"];
       lines.push("#SBATCH --job-name=" + name);
-      lines.push("#SBATCH --account=" + safe(f.account.value.trim(), /^[\w-]{1,60}$/, "p_scads_lv_llm"));
+      lines.push("#SBATCH --account=" + safe(f.account.value.trim(), /^[\w-]{1,60}$/, "p_lv_llmsecrets"));
       if (array) lines.push("#SBATCH --array=" + array);
       lines.push("#SBATCH --ntasks=1");
       lines.push("#SBATCH --cpus-per-task=" + Math.max(1, parseInt(f.cpus.value, 10) || 1));

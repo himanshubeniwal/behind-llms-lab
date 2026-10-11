@@ -5,7 +5,7 @@
 # The first time it installs packages, which takes 5 to 10 minutes. Do that inside
 # a small interactive job, not on the login node:
 #
-#     srun --account=p_scads_lv_llm --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G \
+#     srun --account=p_lv_llmsecrets --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G \
 #          --time=00:45:00 --pty bash -l
 #     source 00_setup/setup_env.sh
 #

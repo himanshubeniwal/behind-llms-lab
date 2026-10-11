@@ -147,7 +147,7 @@ ws_allocate -F horse llm-lab 30        # prints /data/horse/ws/<zih-login>-llm-l
 <h2>What you need to get in</h2>
 <ol>
   <li><strong>A ZIH login.</strong> The same user name and password you use for other university services.</li>
-  <li><strong>Membership in the course project.</strong> On the cluster, computing time belongs to projects. Ours is called <code>p_scads_lv_llm</code>, and every job script names it with <code>--account</code>. You get the link to join from the instructors in the session. A new membership needs some time before it works on all clusters, so join first and read on while you wait.</li>
+  <li><strong>Membership in the course project.</strong> On the cluster, computing time belongs to projects. Ours is called <code>p_lv_llmsecrets</code>, and every job script names it with <code>--account</code>. You get the link to join from the instructors in the session. A new membership needs some time before it works on all clusters, so join first and read on while you wait.</li>
   <li><strong>The university network or the VPN.</strong> The login nodes and JupyterHub cannot be reached from outside.</li>
 </ol>
 <p>Then continue with <a href="setup.html">Setup</a>. More about access is in the <a href="https://compendium.hpc.tu-dresden.de/access/overview/">Compendium</a>.</p>
@@ -160,7 +160,7 @@ ws_allocate -F horse llm-lab 30        # prints /data/horse/ws/<zih-login>-llm-l
     <tr><td>core</td><td>One processor core. You ask for them with <code>--cpus-per-task</code>.</td></tr>
     <tr><td>job</td><td>One piece of work you hand to Slurm. It gets a number, the job ID.</td></tr>
     <tr><td>job script</td><td>A shell script whose first lines start with <code>#SBATCH</code> and say what the job needs.</td></tr>
-    <tr><td>project, account</td><td>The group that the computing time is booked on. Ours is <code>p_scads_lv_llm</code>.</td></tr>
+    <tr><td>project, account</td><td>The group that the computing time is booked on. Ours is <code>p_lv_llmsecrets</code>.</td></tr>
     <tr><td>partition</td><td>A group of nodes inside a cluster with its own limits.</td></tr>
     <tr><td>walltime</td><td>The time limit of a job, as on a clock on the wall. When it is over, Slurm stops the job.</td></tr>
     <tr><td>module</td><td>Software the cluster provides, switched on with <code>module load</code>.</td></tr>

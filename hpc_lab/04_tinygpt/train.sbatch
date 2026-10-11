@@ -14,7 +14,7 @@
 #     sbatch --time=00:02:00 train.sbatch
 #
 #SBATCH --job-name=tinygpt
-#SBATCH --account=p_scads_lv_llm
+#SBATCH --account=p_lv_llmsecrets
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6
 #SBATCH --gres=gpu:1

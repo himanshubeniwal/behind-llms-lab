@@ -45,7 +45,7 @@ $ pip install --user torch transformers
       <div class="take-body">
         <p>Marie asks Slurm for a small machine and lets the setup script do the rest.</p>
 <x-code lang="term" title="on the login node">
-$ srun --account=p_scads_lv_llm --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G --time=00:45:00 --pty bash -l
+$ srun --account=p_lv_llmsecrets --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G --time=00:45:00 --pty bash -l
 $ cd ~/behind-llms-lab/hpc_lab
 $ source 00_setup/setup_env.sh
 workspace : /data/horse/ws/<zih-login>-llm-lab

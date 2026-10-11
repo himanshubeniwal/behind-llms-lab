@@ -11,7 +11,7 @@
 #   Languages:       do the German and Hindi prompts get answers in the same language?
 #
 #SBATCH --job-name=hf-generate
-#SBATCH --account=p_scads_lv_llm
+#SBATCH --account=p_lv_llmsecrets
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6
 #SBATCH --gres=gpu:1
