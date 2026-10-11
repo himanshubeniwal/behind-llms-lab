@@ -502,6 +502,7 @@ def layout(meta, body, ctx, slug, toc=()):
       <a href="{LINKS["zip"]}">Download everything (.zip)</a>
       <a href="{root}notebooks.html">Notebooks</a>
       <a href="{root}lab.html">HPC lab</a>
+      <a href="https://docs.google.com/presentation/d/1RCPS38JQUTXLt8AOsIoLbY4bBjBAqfeKwAVf2E6n13Y/edit?usp=sharing">Slides: HPC intro</a>
     </div>
     <div>
       <p class="foot-head">Help with the cluster</p>
