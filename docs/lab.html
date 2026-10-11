@@ -10,7 +10,7 @@
 <meta property="og:type" content="website">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="assets/site.css?v=b3f13230">
+<link rel="stylesheet" href="assets/site.css?v=1be53eb1">
 <script>(function(){try{if(localStorage.getItem("theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}})()</script>
 </head>
 <body class="page-lab">
@@ -19,7 +19,7 @@
   <div class="top-in">
     <a class="brand" href="index.html"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="5" y="12" width="22" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11 16 4l11 7" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="19.5" r="2.4" fill="var(--accent)"/></svg><span class="brand-text"><b>Behind the Secrets of LLMs</b><i>lab</i></span></a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav">Menu</button>
-    <nav id="nav" class="nav" aria-label="Main"><a href="index.html">Overview</a><a href="clusters.html">Clusters</a><a href="setup.html">Setup</a><a href="lab.html" aria-current="page">HPC lab</a><a href="crash-course.html">Crash course</a><a href="notebooks.html">Notebooks</a><a href="black-box.html">Black box</a><a href="cheatsheet.html">Cheat sheet</a></nav>
+    <nav id="nav" class="nav" aria-label="Main"><a href="index.html">Overview</a><a href="story.html">Story</a><a href="clusters.html">Clusters</a><a href="setup.html">Setup</a><a href="lab.html" aria-current="page">HPC lab</a><a href="crash-course.html">Crash course</a><a href="notebooks.html">Notebooks</a><a href="black-box.html">Black box</a><a href="cheatsheet.html">Cheat sheet</a></nav>
     <div class="top-tools">
       <a class="icon-btn" href="https://github.com/himanshubeniwal/behind-llms-lab" aria-label="The repository on GitHub" title="GitHub repository"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg></a>
       <button class="icon-btn theme-toggle" type="button" aria-label="Switch between light and dark" title="Light or dark"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 0 18V3Z"/><circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
@@ -35,7 +35,7 @@ mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w">     
 sbatch<span class="w"> </span>hello.sbatch<span class="w">                        </span><span class="c1"># prints: Submitted batch job &lt;jobid&gt;</span>
 squeue<span class="w"> </span>--me<span class="w">                                </span><span class="c1"># is it waiting (PD) or running (R)?</span>
 cat<span class="w"> </span>logs/hello-hpc-&lt;jobid&gt;.out<span class="w">             </span><span class="c1"># what the program printed</span></code></pre></figure>
-<p>You need the environment from <a href="setup.html">Setup</a> for exercises 3 to 6. The first two only use the Python that is already on the cluster. Our project is <code>p_scads_lv_llm</code>, and it is already written into every job script.</p>
+<p>Each exercise starts with a line about <a href="story.html">Marie and Martin</a>, two students who made the typical mistake there before you. You need the environment from <a href="setup.html">Setup</a> for exercises 3 to 6. The first two only use the Python that is already on the cluster. Our project is <code>p_scads_lv_llm</code>, and it is already written into every job script.</p>
 
 <ul class="ex-nav">
   <li><a href="setup.html"><b>0</b>Set up Python once</a></li>
@@ -52,6 +52,7 @@ cat<span class="w"> </span>logs/hello-hpc-&lt;jobid&gt;.out<span class="w">     
     <h2 id="your-first-batch-job">Your first batch job<a class="anchor" href="#your-first-batch-job" aria-label="Link to this section">#</a></h2>
     <div class="meta-row"><span>01_hello</span><span>any cluster</span><span>CPU only</span><span>time limit 5 min</span></div>
   </div></div>
+  <div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> Martin submits without a <code>logs</code> folder. The job is gone a second later and there is nothing to read. <a href="story.html#scene-1">See what happened</a></p></div>
   <p><strong>You practise:</strong> your first <code>sbatch</code>, the variables Slurm gives a job, and why <code>--cpus-per-task</code> matters.</p>
   <p>The Python script prints where it runs and what Slurm gave it. Then it estimates π by throwing random darts at a square, split over all the CPU cores the job got.</p>
 <figure class="code "><figcaption><span class="code-title">run it</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/01_hello
@@ -201,6 +202,7 @@ srun<span class="w"> </span>python3<span class="w"> </span>hello_hpc.py<span cla
     <h2 id="watch-a-job-then-cancel-it">Watch a job, then cancel it<a class="anchor" href="#watch-a-job-then-cancel-it" aria-label="Link to this section">#</a></h2>
     <div class="meta-row"><span>02_cancel</span><span>any cluster</span><span>CPU only</span><span>time limit 10 min</span></div>
   </div></div>
+  <div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> Marie sees <code>PD</code>, decides the job is broken and submits it three times. Martin tries to stop a job with Ctrl+C. <a href="story.html#scene-2">See what happened</a></p></div>
   <p><strong>You practise:</strong> <code>squeue</code>, <code>scontrol</code>, <code>scancel</code>, <code>sacct</code>, and saving your work when the job is stopped.</p>
   <p>This job is slow on purpose. It prints one line every 10 seconds for 8 minutes, so you have time to look at it from the outside and then stop it.</p>
 <figure class="code "><figcaption><span class="code-title">run it, look at it, stop it</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/02_cancel
@@ -311,6 +313,7 @@ srun<span class="w"> </span>python3<span class="w"> </span>-u<span class="w"> </
     <h2 id="ask-for-a-gpu-and-measure-it">Ask for a GPU and measure it<a class="anchor" href="#ask-for-a-gpu-and-measure-it" aria-label="Link to this section">#</a></h2>
     <div class="meta-row"><span>03_gpu</span><span>Alpha or Capella</span><span>1 GPU</span><span>time limit 10 min</span></div>
   </div></div>
+  <div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> Martin deletes the <code>--gres</code> line because it looks like a comment, and the GPU is gone. <a href="story.html#scene-3">See what happened</a></p></div>
   <p><strong>You practise:</strong> <code>--gres=gpu:1</code>, <code>nvidia-smi</code>, and the difference between a CPU and a GPU.</p>
   <p>The script multiplies two big matrices, which is the main work inside every layer of a language model. It does it first on the CPU cores and then on the GPU, and prints the speed in TFLOP/s, that is 10<sup>12</sup> floating point operations per second.</p>
 <figure class="code "><figcaption><span class="code-title">run it from an Alpha or Capella login node</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/03_gpu
@@ -427,6 +430,7 @@ srun<span class="w"> </span>python<span class="w"> </span>gpu_check.py<span clas
     <h2 id="train-a-tiny-gpt">Train a tiny GPT<a class="anchor" href="#train-a-tiny-gpt" aria-label="Link to this section">#</a></h2>
     <div class="meta-row"><span>04_tinygpt</span><span>Alpha or Capella</span><span>1 GPU</span><span>time limit 30 min</span></div>
   </div></div>
+  <div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> Martin asks for 6 attention heads and the job fails within seconds. Marie finds the reason in the <code>.err</code> file. <a href="story.html#scene-4">See what happened</a></p></div>
   <p><strong>You practise:</strong> a real training run as a batch job, watching the loss in the log, and using the result afterwards.</p>
   <p>The model is a small GPT that reads and writes single characters. It is the same model you build step by step in <a href="notebooks/5-attention-and-tinygpt.html">notebook 5</a>: 4 Transformer blocks, about 0.8 million parameters. It trains for 5000 steps on tiny Shakespeare, about 1 MB of plays in one text file.</p>
 <figure class="code "><figcaption><span class="code-title">run it</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/04_tinygpt
@@ -783,6 +787,7 @@ srun<span class="w"> </span>python<span class="w"> </span>-u<span class="w"> </s
     <h2 id="a-learning-rate-sweep-with-a-job-array">A learning-rate sweep with a job array<a class="anchor" href="#a-learning-rate-sweep-with-a-job-array" aria-label="Link to this section">#</a></h2>
     <div class="meta-row"><span>05_sweep</span><span>Alpha or Capella</span><span>4 × 1 GPU</span><span>time limit 20 min each</span></div>
   </div></div>
+  <div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> Marie starts the sweep from a fresh terminal and the script refuses to run. <a href="story.html#scene-5">See what happened</a></p></div>
   <p><strong>You practise:</strong> job arrays with <code>--array</code>, and jobs that wait for other jobs with <code>--dependency=afterok</code>.</p>
   <p>Which learning rate is best for the tiny GPT? Instead of trying four values one after the other, you send one array job. Slurm starts the same script four times, each on its own GPU. The only thing that changes is <code>$SLURM_ARRAY_TASK_ID</code>, which goes from 0 to 3 and picks the learning rate. A second, tiny job waits until all four are done and prints a table.</p>
 <figure class="code "><figcaption><span class="code-title">run it</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/05_sweep
@@ -911,6 +916,7 @@ python3<span class="w"> </span>collect_results.py<span class="w"> </span><span c
     <h2 id="run-a-pretrained-llm">Run a pretrained LLM<a class="anchor" href="#run-a-pretrained-llm" aria-label="Link to this section">#</a></h2>
     <div class="meta-row"><span>06_hf_generate</span><span>Alpha or Capella</span><span>1 GPU</span><span>time limit 15 min</span></div>
   </div></div>
+  <div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> Martin skips the download, and the job fails. Then the model finally answers the question about Dresden. <a href="story.html#scene-6">See what happened</a></p></div>
   <p><strong>You practise:</strong> getting a model from Hugging Face into your workspace, and running it over a whole file of prompts as a GPU job.</p>
   <p>The model is <code>Qwen/Qwen2.5-0.5B-Instruct</code>. It has 0.5 billion parameters, speaks many languages and needs about 1 GB of GPU memory. First you download it once on the login node. Then the job loads it from your workspace and answers every line of <code>prompts.txt</code>.</p>
 <figure class="code "><figcaption><span class="code-title">run it</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/06_hf_generate
@@ -1081,6 +1087,6 @@ List three risks of large language models.</code></pre></figure></details>
     </div>
   </div>
 </footer>
-<script src="assets/site.js?v=b3f13230" defer></script>
+<script src="assets/site.js?v=1be53eb1" defer></script>
 </body>
 </html>

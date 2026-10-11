@@ -5,7 +5,8 @@ Lab material for the course *Behind the Secrets of Large Language Models* at TU 
 
 **Website:** <https://himanshubeniwal.github.io/behind-llms-lab/>. It has everything in this
 repository in a readable form: an introduction to the clusters, the setup, all exercises with
-their code, the notebooks with their outputs, a crash course and a cheat sheet.
+their code, the notebooks with their outputs, a crash course and a cheat sheet. A running example
+with two students, Marie and Martin, shows for every exercise what does not work and what does.
 
 **Part 1, the HPC lab** (`hpc_lab/`). You log in to the ZIH clusters, send your first
 Slurm jobs, get a GPU, train a tiny GPT and run a real language model. Every exercise is

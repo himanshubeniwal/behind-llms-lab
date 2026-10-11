@@ -10,7 +10,7 @@ description: Lab material for the course Behind the Secrets of Large Language Mo
       <h1>Behind the Secrets of <em>LLMs</em></h1>
       <p class="lead">A language model is often called a black box. In this lab you open it. You log in to a supercomputer, train a tiny GPT from scratch, and take real language models apart, one small script at a time.</p>
       <div class="btn-row">
-        <a class="btn btn-primary btn-lg" href="clusters.html">Start here: meet the machines</a>
+        <a class="btn btn-primary btn-lg" href="story.html">Start with the story</a>
         <a class="btn btn-lg" href="lab.html">Jump to the HPC lab</a>
       </div>
       <p class="hero-note">Course at TU Dresden (ScaDS.AI). Everything on this page is in <a href="{{repo}}">one GitHub repository</a>.</p>
@@ -20,7 +20,7 @@ description: Lab material for the course Behind the Secrets of Large Language Mo
       <div class="bb-row">
         <div class="bb-col">
           <p class="bb-label">text in</p>
-          <div class="bb-chips"><span>The</span><span>cat</span><span>sat</span><span>on</span><span>the</span></div>
+          <div class="bb-chips"><span>The</span><span>Elbe</span><span>flows</span><span>through</span></div>
         </div>
         <div class="bb-arrow" aria-hidden="true">→</div>
         <div class="bb-box">
@@ -35,11 +35,11 @@ description: Lab material for the course Behind the Secrets of Large Language Mo
         <div class="bb-col">
           <p class="bb-label">next token</p>
           <div class="bb-bars">
-            <div class="bb-bar" style="--p:.43"><span>mat</span><i></i><b>43%</b></div>
-            <div class="bb-bar" style="--p:.17"><span>floor</span><i></i><b>17%</b></div>
-            <div class="bb-bar" style="--p:.12"><span>couch</span><i></i><b>12%</b></div>
-            <div class="bb-bar" style="--p:.10"><span>bed</span><i></i><b>10%</b></div>
-            <div class="bb-bar" style="--p:.07"><span>sofa</span><i></i><b>7%</b></div>
+            <div class="bb-bar" style="--p:.43"><span>Dresden</span><i></i><b>43%</b></div>
+            <div class="bb-bar" style="--p:.17"><span>Hamburg</span><i></i><b>17%</b></div>
+            <div class="bb-bar" style="--p:.12"><span>Germany</span><i></i><b>12%</b></div>
+            <div class="bb-bar" style="--p:.10"><span>the</span><i></i><b>10%</b></div>
+            <div class="bb-bar" style="--p:.07"><span>Saxony</span><i></i><b>7%</b></div>
           </div>
         </div>
       </div>
@@ -94,12 +94,30 @@ description: Lab material for the course Behind the Secrets of Large Language Mo
   </div>
 </section>
 
+<section class="section">
+  <div class="wrap story-home">
+    <div>
+      <p class="eyebrow">The running example</p>
+      <h2 style="font-size: clamp(1.7rem, 3.2vw, 2.5rem); font-weight: 800; letter-spacing: -.03em">Meet Marie and Martin</h2>
+      <p class="lede" style="margin: .9rem 0 1.2rem">Two students at TU Dresden want a language model on a university GPU to answer one question: <em>What is the capital of Saxony, and what is it famous for?</em> They go through all seven exercises, and one of them gets it wrong first every time. Each scene shows what does not work, why, and what works.</p>
+      <p style="color: var(--muted); margin-bottom: 1.4rem">One sentence travels with them through the whole site: <strong>The Elbe flows through …</strong></p>
+      <a class="btn btn-primary btn-lg" href="story.html">Follow the story</a>
+    </div>
+    <div class="cast">
+      <div class="person"><i class="avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m15 15 5 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></i><div>
+        <p class="trait">sometimes too careful</p><h3>Marie</h3><p>Sees a job waiting in the queue, decides it is broken, and submits it three more times.</p></div></div>
+      <div class="person"><i class="avatar b"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"/></svg></i><div>
+        <p class="trait">sometimes too fast</p><h3>Martin</h3><p>Deletes the line that asks for a GPU because it looks like a comment, and wonders where the GPU went.</p></div></div>
+    </div>
+  </div>
+</section>
+
 <section class="section alt">
   <div class="wrap">
     <div class="section-head">
       <p class="eyebrow">The first session</p>
       <h2>Follow the path</h2>
-      <p>The pages are in the order you need them. If you are new to all of this, go from 1 to 6. If you only need a command, the cheat sheet has it.</p>
+      <p>The pages are in the order you need them. If you are new to all of this, go from 1 to 6. If you only need a command, the <a href="cheatsheet.html">cheat sheet</a> has it.</p>
     </div>
     <ol class="path">
       <li><a href="clusters.html"><h3>Meet the machines</h3><p>What a cluster is, which five ZIH has, and which ones we use.</p><small>read first</small></a></li>

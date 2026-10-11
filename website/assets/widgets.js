@@ -202,8 +202,10 @@
 
   // ------------------------------------------------------------------ 3. temperature, top-k, top-p
   function sampler(root) {
-    var TOK = ["mat", "floor", "couch", "bed", "sofa", "table", "roof", "chair", "moon", "keyboard"];
+    // "The Elbe flows through ...": the first six are fine, the last four are wrong (the Elbe is not in Prague or Berlin)
+    var TOK = ["Dresden", "Hamburg", "Germany", "the", "Saxony", "Magdeburg", "Prague", "Berlin", "moon", "keyboard"];
     var Z = [4.2, 3.3, 2.9, 2.7, 2.4, 2.0, 1.6, 1.5, 0.2, 0.0];
+    var FIRST_WRONG = 6;
     var s = { T: 1, k: 10, p: 1, counts: TOK.map(function () { return 0; }), seq: [] };
     var bars = el("div", { class: "bars" }), read = el("div", { class: "readout" }), sampled = el("div", { class: "sampled", "aria-live": "polite" });
     function probs() {
@@ -215,18 +217,19 @@
       return kept.map(function (v) { return v / total; });
     }
     function draw() {
-      var p = probs(), H = 0;
+      var p = probs(), H = 0, wrong = 0;
       bars.textContent = "";
       p.forEach(function (v, i) {
         if (v > 0) H -= v * Math.log2(v);
-        bars.appendChild(el("div", { class: "bar" + (v === 0 ? " cut" : ""), style: "--p:" + v.toFixed(4) }, [
+        if (i >= FIRST_WRONG) wrong += v;
+        bars.appendChild(el("div", { class: "bar" + (i >= FIRST_WRONG ? " wrong" : "") + (v === 0 ? " cut" : ""), style: "--p:" + v.toFixed(4) }, [
           el("span", { text: TOK[i] }), el("i"), el("b", { text: (v * 100).toFixed(1) + "%" }), el("em", { text: s.counts[i] ? "×" + s.counts[i] : "" })]));
       });
       read.textContent = "";
-      [["tokens left", p.filter(function (v) { return v > 0; }).length], ["entropy", H.toFixed(2) + " bits"], ["perplexity", Math.pow(2, H).toFixed(2)]]
+      [["tokens left", p.filter(function (v) { return v > 0; }).length], ["perplexity", Math.pow(2, H).toFixed(2)], ["wrong answers", (wrong * 100).toFixed(1) + "%"]]
         .forEach(function (r) { read.appendChild(el("span", {}, [r[0] + " ", el("b", { text: String(r[1]) })])); });
       sampled.textContent = "";
-      sampled.appendChild(document.createTextNode("The cat sat on the "));
+      sampled.appendChild(document.createTextNode("The Elbe flows through "));
       sampled.appendChild(el("span", { text: s.seq.length ? s.seq.slice(-12).join(" · ") : "…" }));
     }
     function draw1() {
@@ -247,14 +250,14 @@
             button("Clear", false, function () { clear(); draw(); })]),
           sampled])
       ]),
-      el("p", { class: "hint", text: "The logits are made up for this demo, the mechanics are the real ones. The temperature divides the logits before the softmax. Top-k keeps the k most likely tokens. Top-p keeps the smallest set whose probabilities add up to p. The perplexity says how many equally likely tokens the model is choosing between." })
+      el("p", { class: "hint", text: "The sentence is “The Elbe flows through …”. Dresden, Hamburg and Magdeburg are all correct. Prague and Berlin (red) sound just as good and are wrong, the Elbe flows through neither. Turn the temperature up and watch the share of wrong answers grow. Then cut the tail off with top-k or top-p. The numbers are made up for this demo, the mechanics are the real ones: the temperature divides the logits before the softmax, top-k keeps the k most likely tokens, top-p keeps the smallest set whose probabilities add up to p, and the perplexity says how many equally likely tokens the model is choosing between." })
     ]);
     draw();
   }
 
   // ------------------------------------------------------------------ 4. the causal mask
   function mask(root) {
-    var TOK = ["The", "cat", "sat", "on", "the", "mat"], sel = 2;
+    var TOK = ["The", "Elbe", "flows", "through", "Dresden", "."], sel = 3;
     var grid = el("div", { class: "mask", style: "--n:" + TOK.length }), note = el("p", { class: "hint", "aria-live": "polite" });
     function draw() {
       grid.textContent = "";

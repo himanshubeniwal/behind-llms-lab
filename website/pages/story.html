@@ -1,0 +1,385 @@
+<!--
+title: Marie and Martin
+eyebrow: The running example
+lead: Two students at TU Dresden, one afternoon, one goal: a language model on a GPU of their own university should answer a question about Dresden. On the way they make every typical mistake, so you do not have to.
+description: A running example for the whole lab. Marie and Martin, two students at TU Dresden, go through all seven exercises. Each scene shows what does not work, why, and what works.
+-->
+<h2>The cast</h2>
+<div class="cast">
+  <div class="person"><i class="avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m15 15 5 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></i><div>
+    <p class="trait">sometimes too careful</p><h3>Marie</h3>
+    <p>New to the terminal. Reads the instructions twice before typing anything. When something takes long, Marie assumes it is broken.</p></div></div>
+  <div class="person"><i class="avatar b"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"/></svg></i><div>
+    <p class="trait">sometimes too fast</p><h3>Martin</h3>
+    <p>Quick at the keyboard. Reads the instructions afterwards, if at all. When something looks unnecessary, Martin deletes it.</p></div></div>
+</div>
+<p>If the names look familiar: Marie and Martin are the two example users of the ZIH documentation. They are the Alice and Bob of the Dresden clusters, and you will meet them again in the <a href="https://compendium.hpc.tu-dresden.de">Compendium</a>, in lines like <code>marie@login.alpha$</code>.</p>
+
+<h2>The plan</h2>
+<p class="lede">It is the first lab session. On the table are two laptops and one question:</p>
+<p class="quote">What is the capital of Saxony, and what is it famous for?</p>
+<p>They want a language model to answer it. Not a chatbot on some website, but a model they start themselves, on a GPU that belongs to their own university. The question is the second prompt in <code>prompts.txt</code> of the last exercise, and there are six steps before it.</p>
+<p>A second thread runs through the story: one unfinished sentence, <strong>The Elbe flows through …</strong> It shows what happens <em>inside</em> the model, and it comes back <a href="#the-same-story-inside-the-model">at the end</a>.</p>
+<div class="legend"><span class="verdict bad">does not work</span> what one of them tried first, and why it failed <span class="verdict good">works</span> what to do instead</div>
+
+<section class="ex scene" id="scene-0">
+  <div class="ex-head"><div class="ex-num">0</div><div>
+    <h2>Setting up</h2>
+    <div class="meta-row"><span>scene 0</span><span>00_setup</span><span><a href="setup.html">the Setup page</a></span></div>
+  </div></div>
+  <p>Both are logged in on Alpha. They need Python with PyTorch.</p>
+  <div class="duel">
+    <div class="take bad">
+      <div class="take-head"><x-who martin/><span class="verdict bad">does not work</span></div>
+      <div class="take-body">
+        <p>Martin knows how to install things and starts right away.</p>
+<x-code lang="term" title="on the login node">
+$ pip install --user torch transformers
+  (it downloads for a long time, into the home folder)
+</x-code>
+        <p><strong>Why not:</strong> the login node is shared by everybody, and an installation is real work. Worse, everything lands in <code>$HOME</code>, which has a quota of 50 GiB. Add the caches of pip and a few models from Hugging Face and it fills up. With a full home folder you cannot even submit jobs any more.</p>
+      </div>
+    </div>
+    <div class="take good">
+      <div class="take-head"><x-who marie/><span class="verdict good">works</span></div>
+      <div class="take-body">
+        <p>Marie asks Slurm for a small machine and lets the setup script do the rest.</p>
+<x-code lang="term" title="on the login node">
+$ srun --account=p_scads_lv_llm --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G --time=00:45:00 --pty bash -l
+$ cd ~/behind-llms-lab/hpc_lab
+$ source 00_setup/setup_env.sh
+workspace : /data/horse/ws/<zih-login>-llm-lab
+  (a few minutes of installing)
+environment ready
+$ exit
+</x-code>
+        <p>The environment, the caches and the data now live in a <a href="clusters.html#where-your-files-live">workspace</a>, not in the home folder.</p>
+      </div>
+    </div>
+  </div>
+  <p>Marie is not safe from mistakes either. The first attempt looked like this:</p>
+  <div class="duel">
+    <div class="take bad">
+      <div class="take-head"><x-who marie/><span class="verdict bad">does not work</span></div>
+      <div class="take-body">
+<x-code lang="term">
+$ bash 00_setup/setup_env.sh
+  (the script runs and finishes)
+$ echo $WS_DIR
+  (an empty line)
+</x-code>
+        <p><strong>Why not:</strong> <code>bash</code> starts a new shell, runs the script in it and closes it again. Everything the script switched on is gone with that shell.</p>
+      </div>
+    </div>
+    <div class="take good">
+      <div class="take-head"><x-who marie/><span class="verdict good">works</span></div>
+      <div class="take-body">
+<x-code lang="term">
+$ source 00_setup/setup_env.sh
+$ echo $WS_DIR
+/data/horse/ws/<zih-login>-llm-lab
+</x-code>
+        <p><code>source</code> runs the script inside the shell you are typing in, so the environment stays.</p>
+      </div>
+    </div>
+  </div>
+  <p class="lesson"><span>Remember</span>Heavy work goes into a job, big files go into the workspace, and the setup script is sourced, not run.</p>
+</section>
+
+<section class="ex scene" id="scene-1">
+  <div class="ex-head"><div class="ex-num">1</div><div>
+    <h2>The first job</h2>
+    <div class="meta-row"><span>scene 1</span><span>01_hello</span><span><a href="lab.html#ex1">exercise 1</a></span></div>
+  </div></div>
+  <p>The first exercise is one command. Martin does not need to read more than that.</p>
+  <div class="duel">
+    <div class="take bad">
+      <div class="take-head"><x-who martin/><span class="verdict bad">does not work</span></div>
+      <div class="take-body">
+<x-code lang="term">
+$ cd ~/behind-llms-lab/hpc_lab/01_hello
+$ sbatch hello.sbatch
+Submitted batch job 1234567
+$ squeue --me
+  (no job. It is already gone.)
+$ cat logs/hello-hpc-1234567.out
+!! cat: logs/hello-hpc-1234567.out: No such file or directory
+</x-code>
+        <p><strong>Why not:</strong> the job script sends its output to the folder <code>logs</code>. The folder did not exist, so the job ended at once and left no log behind.</p>
+      </div>
+    </div>
+    <div class="take good">
+      <div class="take-head"><x-who marie/><span class="verdict good">works</span></div>
+      <div class="take-body">
+<x-code lang="term">
+$ mkdir -p logs && sbatch hello.sbatch
+Submitted batch job 1234568
+$ cat logs/hello-hpc-1234568.out
+Hello from        : (the name of a compute node)
+CPUs I may use    : 4   <- what Slurm allocated to me
+  ...
+pi ~ 3.14…   (20,000,000 samples on 4 CPU(s) in … s)
+</x-code>
+        <p>The job ran on a compute node, with exactly the 4 cores the script asked for.</p>
+      </div>
+    </div>
+  </div>
+  <p class="lesson"><span>Remember</span>No folder for the log, no log. Type <code>mkdir -p logs</code> before the first <code>sbatch</code> in a new folder.</p>
+</section>
+
+<section class="ex scene" id="scene-2">
+  <div class="ex-head"><div class="ex-num">2</div><div>
+    <h2>Is it stuck?</h2>
+    <div class="meta-row"><span>scene 2</span><span>02_cancel</span><span><a href="lab.html#ex2">exercise 2</a></span></div>
+  </div></div>
+  <p>The second job is slow on purpose. This time it is Marie who gets nervous.</p>
+  <div class="duel">
+    <div class="take bad">
+      <div class="take-head"><x-who marie/><span class="verdict bad">does not work</span></div>
+      <div class="take-body">
+<x-code lang="term">
+$ sbatch sleepy.sbatch
+Submitted batch job 1234570
+$ squeue --me
+  (the ST column says PD)
+$ squeue --me
+  (still PD. Something must be broken.)
+$ sbatch sleepy.sbatch
+Submitted batch job 1234571
+$ sbatch sleepy.sbatch
+Submitted batch job 1234572
+</x-code>
+        <p><strong>Why not:</strong> <code>PD</code> means pending. The job waits for its turn, like everybody in the queue of the Mensa at noon. Nothing is broken. Now three copies are waiting instead of one.</p>
+      </div>
+    </div>
+    <div class="take good">
+      <div class="take-head"><x-who marie/><span class="verdict good">works</span></div>
+      <div class="take-body">
+<x-code lang="term">
+$ squeue --me --start  # when will it probably start?
+$ whypending 1234570  # a ZIH helper: why is it waiting?
+$ scancel 1234571 1234572  # remove the two copies
+</x-code>
+        <p>Ask Slurm instead of guessing. And a batch job does not need you: close the laptop, go for lunch, it runs anyway.</p>
+      </div>
+    </div>
+  </div>
+  <p>Then Martin wants to stop the job that is running.</p>
+  <div class="duel">
+    <div class="take bad">
+      <div class="take-head"><x-who martin/><span class="verdict bad">does not work</span></div>
+      <div class="take-body">
+<x-code lang="term">
+$ tail -f logs/sleepy-1234570.out
+[sleepy] step    3  …  still working...
+  (Martin presses Ctrl+C)
+$ squeue --me
+  (the job is still there, ST = R)
+</x-code>
+        <p><strong>Why not:</strong> Ctrl+C stopped <code>tail</code>, the program that shows the log. The job runs on another machine and never noticed.</p>
+      </div>
+    </div>
+    <div class="take good">
+      <div class="take-head"><x-who martin/><span class="verdict good">works</span></div>
+      <div class="take-body">
+<x-code lang="term">
+$ scancel 1234570
+$ tail -n 2 logs/sleepy-1234570.out
+[sleepy] received signal 15 (SIGTERM) -> cleaning up
+[sleepy] saved checkpoint-1234570.json at step 4 (cancelled)
+</x-code>
+        <p>Slurm asks the program to stop before it kills it. This program uses the moment to save its work.</p>
+      </div>
+    </div>
+  </div>
+  <p class="lesson"><span>Remember</span><code>PD</code> is a queue, not an error. Ask <code>whypending</code> why, and stop jobs with <code>scancel</code>.</p>
+</section>
+
+<section class="ex scene" id="scene-3">
+  <div class="ex-head"><div class="ex-num">3</div><div>
+    <h2>Where is my GPU?</h2>
+    <div class="meta-row"><span>scene 3</span><span>03_gpu</span><span><a href="lab.html#ex3">exercise 3</a></span></div>
+  </div></div>
+  <p>Martin tidies up the job script first. The lines that start with <code>#</code> are comments, after all, and comments can go.</p>
+  <div class="duel">
+    <div class="take bad">
+      <div class="take-head"><x-who martin/><span class="verdict bad">does not work</span></div>
+      <div class="take-body">
+        <p>Martin deletes the line <code>#SBATCH --gres=gpu:1</code> and submits.</p>
+<x-code lang="term" title="in the log">
+CUDA available        : False
+!! No GPU found. Did you ask for one with --gres=gpu:1 ?
+</x-code>
+        <p><strong>Why not:</strong> lines that start with <code>#SBATCH</code> look like comments to the shell, but Slurm reads them as orders. Without that line the job runs on a machine full of GPUs and is not allowed to touch one.</p>
+      </div>
+    </div>
+    <div class="take good">
+      <div class="take-head"><x-who marie/><span class="verdict good">works</span></div>
+      <div class="take-body">
+        <p>Marie changes nothing and submits.</p>
+<x-code lang="term" title="in the log">
+CUDA available        : True
+GPU 0                 : (name and memory of the GPU)
+  (then three lines with the speed: CPU, GPU, and GPU with 16-bit numbers)
+</x-code>
+        <p>Now there is something to compare. How many times faster is the GPU?</p>
+      </div>
+    </div>
+  </div>
+  <p>Logging in to Barnard would not have helped Martin either. It is the biggest cluster, with 720 nodes, and it has not a single GPU. Every cluster has its own Slurm, so a job sent from Barnard stays on Barnard.</p>
+  <p class="lesson"><span>Remember</span><code>#SBATCH</code> lines are orders, not comments. No <code>--gres=gpu:1</code>, no GPU.</p>
+</section>
+
+<section class="ex scene" id="scene-4">
+  <div class="ex-head"><div class="ex-num">4</div><div>
+    <h2>A tiny GPT learns Shakespeare</h2>
+    <div class="meta-row"><span>scene 4</span><span>04_tinygpt</span><span><a href="lab.html#ex4">exercise 4</a></span></div>
+  </div></div>
+  <p>Two of the ZIH machines are called Romeo and Julia. That fits, because the tiny GPT learns from Shakespeare, and the first thing it is asked to continue is <code>ROMEO:</code>. The normal run works for both of them. Then Martin wants more.</p>
+  <div class="duel">
+    <div class="take bad">
+      <div class="take-head"><x-who martin/><span class="verdict bad">does not work</span></div>
+      <div class="take-body">
+        <p>More attention heads must be better.</p>
+<x-code lang="term">
+$ sbatch train.sbatch --n-head 6
+Submitted batch job 1234580
+$ sacct -j 1234580 --format=JobID,State,Elapsed
+  (State: FAILED, after a few seconds)
+$ cat logs/tinygpt-1234580.err
+  ...
+    assert n_embd % n_head == 0
+!! AssertionError
+</x-code>
+        <p><strong>Why not:</strong> the width of the model, 128 numbers per character, is split evenly over the heads. 128 cannot be divided by 6.</p>
+      </div>
+    </div>
+    <div class="take good">
+      <div class="take-head"><x-who marie/><span class="verdict good">works</span></div>
+      <div class="take-body">
+        <p>Marie reads the last lines of the <code>.err</code> file and makes the model wider too. 384 divided by 6 is 64.</p>
+<x-code lang="term">
+$ sbatch train.sbatch --n-head 6 --n-embd 384
+$ tail -f logs/tinygpt-1234581.out
+step   250 | train … | val … | …k tok/s | …s
+step   500 | train … | val … | …k tok/s | …s
+</x-code>
+        <p>The two numbers after <code>train</code> and <code>val</code> go down. The model is learning.</p>
+      </div>
+    </div>
+  </div>
+  <p>Marie tries one more thing on purpose: a job with far too little time, <code>sbatch --time=00:02:00 train.sbatch</code>. If the training is not finished by then, this line appears in the log about a minute before the time is over:</p>
+<x-code lang="term" title="in the log">
+Got SIGTERM, saving a checkpoint and stopping
+</x-code>
+  <p>Running out of time is not a disaster when the script is prepared for it. The job script asks Slurm for a warning 60 seconds early, and the Python script uses it to save.</p>
+  <p class="lesson"><span>Remember</span>When a job fails, the reason is almost always in its <code>.err</code> file. Read it before you ask anyone.</p>
+</section>
+
+<section class="ex scene" id="scene-5">
+  <div class="ex-head"><div class="ex-num">5</div><div>
+    <h2>Four learning rates at once</h2>
+    <div class="meta-row"><span>scene 5</span><span>05_sweep</span><span><a href="lab.html#ex5">exercise 5</a></span></div>
+  </div></div>
+  <p>Which learning rate is best? Martin's plan is to copy the job script four times and change one number in each copy. Marie prefers the job array from the exercise, and opens a fresh terminal for it, to keep things tidy.</p>
+  <div class="duel">
+    <div class="take bad">
+      <div class="take-head"><x-who marie/><span class="verdict bad">does not work</span></div>
+      <div class="take-body">
+<x-code lang="term" title="in the new terminal">
+$ cd ~/behind-llms-lab/hpc_lab/05_sweep
+$ ./submit_sweep.sh
+!! ./submit_sweep.sh: line 7: WS_DIR: run source ../00_setup/setup_env.sh first
+</x-code>
+        <p><strong>Why not:</strong> a new terminal is a new shell, and it knows nothing about the environment. <code>$WS_DIR</code> is empty, so the script stops before it sends results to nowhere.</p>
+      </div>
+    </div>
+    <div class="take good">
+      <div class="take-head"><x-who marie/><span class="verdict good">works</span></div>
+      <div class="take-body">
+<x-code lang="term">
+$ source ../00_setup/setup_env.sh
+$ mkdir -p logs && ./submit_sweep.sh
+sweep (array) job : 1234590
+collect job       : 1234591 (waits for 1234590, squeue shows it as Dependency)
+$ squeue --me
+  (four tasks, 1234590_0 to 1234590_3, and one job that waits for them)
+</x-code>
+        <p>One script and one line, <code>--array=0-3</code>. Four GPUs train at the same time, and a fifth job prints the table when they are done.</p>
+      </div>
+    </div>
+  </div>
+  <p>Martin's four copies would have worked too. But with four files there are four places for a typo, and with forty learning rates there are forty.</p>
+  <p class="lesson"><span>Remember</span>Every new terminal needs <code>source …/setup_env.sh</code> once. And when you copy a job script to change one number, you want a job array.</p>
+</section>
+
+<section class="ex scene" id="scene-6">
+  <div class="ex-head"><div class="ex-num">6</div><div>
+    <h2>The question about Dresden</h2>
+    <div class="meta-row"><span>scene 6</span><span>06_hf_generate</span><span><a href="lab.html#ex6">exercise 6</a></span></div>
+  </div></div>
+  <p>The last step. A real language model, half a billion parameters, and the question they started with. Martin can already see the answer and skips a line.</p>
+  <div class="duel">
+    <div class="take bad">
+      <div class="take-head"><x-who martin/><span class="verdict bad">does not work</span></div>
+      <div class="take-body">
+<x-code lang="term">
+$ mkdir -p logs && sbatch generate.sbatch
+Submitted batch job 1234600
+$ sacct -j 1234600 --format=JobID,State,Elapsed
+  (State: FAILED, after a few seconds)
+</x-code>
+        <p><strong>Why not:</strong> the job is offline on purpose (<code>HF_HUB_OFFLINE=1</code>), and the model was never downloaded. The <code>.err</code> file says that the model files cannot be found.</p>
+      </div>
+    </div>
+    <div class="take good">
+      <div class="take-head"><x-who marie/><span class="verdict good">works</span></div>
+      <div class="take-body">
+<x-code lang="term" title="on the login node">
+$ source ../00_setup/setup_env.sh
+$ python generate.py --download-only
+HF_HOME = /data/horse/ws/<zih-login>-llm-lab/.cache/huggingface
+downloaded Qwen/Qwen2.5-0.5B-Instruct to (a folder in the workspace). Now submit the GPU job.
+$ mkdir -p logs && sbatch generate.sbatch
+</x-code>
+        <p>Download once on the login node, into the workspace. Compute in the job.</p>
+      </div>
+    </div>
+  </div>
+  <p>When the job is done, the log holds what they came for:</p>
+<x-code lang="term" title="logs/hf-generate-1234601.out">
+>>> What is the capital of Saxony, and what is it famous for?
+  (a few fluent sentences, written by the model)
+</x-code>
+  <p>An answer about Dresden, from a language model that runs on a GPU of TU Dresden. Marie reads it twice, of course. Is it right? A model of this size writes smooth sentences. It may mention the Frauenkirche, the Zwinger or the Semperoper, and it can say things that are simply wrong in the same smooth tone.</p>
+  <div class="callout try"><p><strong>Check it yourself.</strong> The same file has a question with exactly one right answer: a train leaves Dresden at 9:15 and arrives in Berlin at 11:05. That is 1 hour and 50 minutes. Does the model agree? Run the job twice. Does it agree with itself?</p></div>
+  <p class="lesson"><span>Remember</span>Download on the login node, compute in the job. And do not trust an answer because it sounds good.</p>
+</section>
+
+<h2>The same story, inside the model</h2>
+<p class="lede">Why can a model be fluent and wrong at the same time? Follow the second thread: <strong>The Elbe flows through …</strong></p>
+<ol class="pipeline">
+  <li data-n="1"><b>The sentence is cut into tokens</b><span><em>The</em>, <em>Elbe</em>, <em>flows</em>, <em>through</em>. A rare word like <em>Elbe</em> may be cut into several pieces. <a href="crash-course.html#tokens-turning-text-into-numbers">Try the tokenizer</a>.</span></li>
+  <li data-n="2"><b>Every token looks back at the ones before it</b><span>To guess what comes after <em>through</em>, the model has to find <em>Elbe</em> again. That is attention. <a href="crash-course.html#attention-letting-tokens-look-back">See the mask</a>.</span></li>
+  <li data-n="3"><b>The model gives a probability to every possible next token</b><span><em>Dresden</em>, <em>Hamburg</em> and <em>Magdeburg</em> are all correct, the Elbe flows through each of them. <em>Prague</em> and <em>Berlin</em> sound just as good and are wrong.</span></li>
+  <li data-n="4"><b>One token is picked, with some randomness</b><span>Usually a likely one. Sometimes an unlikely one. If it is <em>Prague</em>, the model does not notice. It just continues the sentence. <a href="crash-course.html#generating-text">Play with the temperature</a>.</span></li>
+</ol>
+<p>The model never looks anything up. It continues text with what is likely. Likely is often true, and that is why these models are useful. Likely is not always true, and that is why <a href="black-box.html">looking inside</a> matters.</p>
+
+<h2>What Marie and Martin learned</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Scene</th><th>What went wrong</th><th>The rule</th></tr></thead>
+  <tbody>
+    <tr><td><a href="#scene-0">0</a></td><td>Installing on the login node, into the home folder</td><td>Heavy work in a job, big files in the workspace.</td></tr>
+    <tr><td><a href="#scene-0">0</a></td><td><code>bash setup_env.sh</code></td><td><code>source</code> it, so the environment stays.</td></tr>
+    <tr><td><a href="#scene-1">1</a></td><td>No <code>logs</code> folder, the job vanished</td><td><code>mkdir -p logs</code> before <code>sbatch</code>.</td></tr>
+    <tr><td><a href="#scene-2">2</a></td><td>Submitting again because the job was pending</td><td><code>PD</code> is a queue. Ask <code>whypending</code>.</td></tr>
+    <tr><td><a href="#scene-2">2</a></td><td>Ctrl+C to stop a job</td><td><code>scancel</code> stops jobs.</td></tr>
+    <tr><td><a href="#scene-3">3</a></td><td>Deleting the <code>--gres</code> line</td><td><code>#SBATCH</code> lines are orders.</td></tr>
+    <tr><td><a href="#scene-4">4</a></td><td>6 heads for a width of 128</td><td>Read the <code>.err</code> file.</td></tr>
+    <tr><td><a href="#scene-5">5</a></td><td>A new terminal without the environment</td><td><code>source …/setup_env.sh</code> in every new shell.</td></tr>
+    <tr><td><a href="#scene-6">6</a></td><td>No download before an offline job</td><td>Download on the login node first.</td></tr>
+    <tr><td><a href="#scene-6">6</a></td><td>Believing a fluent answer</td><td>Check it.</td></tr>
+  </tbody>
+</table></div>
+<p>Now it is your turn. Start with <a href="clusters.html">the machines</a>, or go straight to <a href="setup.html">the setup</a>.</p>

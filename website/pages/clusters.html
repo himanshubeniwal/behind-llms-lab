@@ -118,7 +118,7 @@ description: An introduction to the ZIH high performance computing clusters at T
 <h2>Where your files live</h2>
 <p>There are two kinds of storage, and mixing them up is the most common beginner problem.</p>
 <div class="compare">
-  <div class="card"><h3>Your home folder</h3><p><code>$HOME</code> is permanent and backed up, and it is small. It is for your code and your settings. If pip or Hugging Face put their caches there, it is full after one afternoon and you get <code>Disk quota exceeded</code>.</p></div>
+  <div class="card"><h3>Your home folder</h3><p><code>$HOME</code> is permanent and backed up, and it is limited to 50 GiB. It is for your code and your settings. If pip and Hugging Face put their caches and models there, it fills up and you get <code>Disk quota exceeded</code>. With a full home folder you cannot submit jobs any more.</p></div>
   <div class="card"><h3>A workspace</h3><p>A big, fast folder that you ask for with one command. It has an expiry date, and you can extend it. This is where the Python environment, the data, the models and the results of this lab go.</p></div>
 </div>
 <x-code lang="bash" title="a workspace in one line">

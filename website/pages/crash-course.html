@@ -47,6 +47,7 @@ for step in range(steps):
 
 <h2>A language model is a next-token classifier</h2>
 <p class="lede">The task every LLM solves is: given the text so far, guess what comes next.</p>
+<p>Take the sentence that travels through this site: <strong>The Elbe flows through …</strong> You can finish it. So can a language model, and the way it does that is the whole story of this page.</p>
 <p>The classes are all the pieces of text the model knows, its vocabulary. The model outputs one logit for each of them, the softmax makes a probability distribution, and the cross-entropy compares it with the piece that really came next. A sentence of ten tokens is ten classification problems.</p>
 <p>The chain rule of probability says that this is enough to model whole texts. The probability of a text is the product of the probabilities of each token, given everything before it:</p>
 <x-math block>P(x_1, \dots, x_n) = \prod_{t=1}^{n} P(x_t \mid x_1, \dots, x_{t-1})</x-math>
@@ -87,6 +88,7 @@ for step in range(steps):
 </ul>
 <p>The score between two tokens is the dot product of one's query with the other's key. It is large when what one is looking for matches what the other has. A softmax over the scores gives the weights, and the output is the weighted average of the values. In one line, with the mask <x-math>M</x-math>:</p>
 <x-math block>\text{Attention}(Q,K,V) = \text{softmax}\left(\frac{QK^\top}{\sqrt{d_k}} + M\right)V</x-math>
+<p>In our sentence, the position after <em>through</em> has to find <em>Elbe</em> again, two tokens back. A river name there makes a city on that river likely. That is the kind of link attention can learn.</p>
 <p>Nobody tells the model what to look for. The three small matrices that make queries, keys and values are parameters, and they are learned with the same loop as everything else.</p>
 
 <h2>The Transformer, and what GPT means</h2>
@@ -117,6 +119,7 @@ for step in range(steps):
 
 <h2>Generating text</h2>
 <p>A trained model gives a probability for every possible next token. To write text we pick one, add it to the input, and ask again. How we pick is our decision, not the model's, and it changes the text a lot.</p>
+<p>After <em>The Elbe flows through</em>, several continuations are right: <em>Dresden</em>, <em>Hamburg</em>, <em>Magdeburg</em>. Others sound just as natural and are wrong: <em>Prague</em>, <em>Berlin</em>. The model does not know the difference. It only has probabilities. In the demo below you decide how much risk it takes.</p>
 <ul>
   <li><strong>Greedy:</strong> always take the most likely token. Always the same answer, and often repetitive.</li>
   <li><strong>Temperature</strong> <x-math>T</x-math>: divide the logits by <x-math>T</x-math> before the softmax. A small <x-math>T</x-math> makes the model careful, a large one makes it adventurous and more often wrong.</li>

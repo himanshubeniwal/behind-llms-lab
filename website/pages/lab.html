@@ -13,7 +13,7 @@ sbatch hello.sbatch                        # prints: Submitted batch job <jobid>
 squeue --me                                # is it waiting (PD) or running (R)?
 cat logs/hello-hpc-<jobid>.out             # what the program printed
 </x-code>
-<p>You need the environment from <a href="setup.html">Setup</a> for exercises 3 to 6. The first two only use the Python that is already on the cluster. Our project is <code>p_scads_lv_llm</code>, and it is already written into every job script.</p>
+<p>Each exercise starts with a line about <a href="story.html">Marie and Martin</a>, two students who made the typical mistake there before you. You need the environment from <a href="setup.html">Setup</a> for exercises 3 to 6. The first two only use the Python that is already on the cluster. Our project is <code>p_scads_lv_llm</code>, and it is already written into every job script.</p>
 
 <ul class="ex-nav">
   <li><a href="setup.html"><b>0</b>Set up Python once</a></li>
@@ -30,6 +30,7 @@ cat logs/hello-hpc-<jobid>.out             # what the program printed
     <h2>Your first batch job</h2>
     <div class="meta-row"><span>01_hello</span><span>any cluster</span><span>CPU only</span><span>time limit 5 min</span></div>
   </div></div>
+  <div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> Martin submits without a <code>logs</code> folder. The job is gone a second later and there is nothing to read. <a href="story.html#scene-1">See what happened</a></p></div>
   <p><strong>You practise:</strong> your first <code>sbatch</code>, the variables Slurm gives a job, and why <code>--cpus-per-task</code> matters.</p>
   <p>The Python script prints where it runs and what Slurm gave it. Then it estimates π by throwing random darts at a square, split over all the CPU cores the job got.</p>
 <x-code lang="bash" title="run it">
@@ -73,6 +74,7 @@ sbatch --cpus-per-task=8 hello.sbatch
     <h2>Watch a job, then cancel it</h2>
     <div class="meta-row"><span>02_cancel</span><span>any cluster</span><span>CPU only</span><span>time limit 10 min</span></div>
   </div></div>
+  <div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> Marie sees <code>PD</code>, decides the job is broken and submits it three times. Martin tries to stop a job with Ctrl+C. <a href="story.html#scene-2">See what happened</a></p></div>
   <p><strong>You practise:</strong> <code>squeue</code>, <code>scontrol</code>, <code>scancel</code>, <code>sacct</code>, and saving your work when the job is stopped.</p>
   <p>This job is slow on purpose. It prints one line every 10 seconds for 8 minutes, so you have time to look at it from the outside and then stop it.</p>
 <x-code lang="bash" title="run it, look at it, stop it">
@@ -108,6 +110,7 @@ whypending <jobid>
     <h2>Ask for a GPU and measure it</h2>
     <div class="meta-row"><span>03_gpu</span><span>Alpha or Capella</span><span>1 GPU</span><span>time limit 10 min</span></div>
   </div></div>
+  <div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> Martin deletes the <code>--gres</code> line because it looks like a comment, and the GPU is gone. <a href="story.html#scene-3">See what happened</a></p></div>
   <p><strong>You practise:</strong> <code>--gres=gpu:1</code>, <code>nvidia-smi</code>, and the difference between a CPU and a GPU.</p>
   <p>The script multiplies two big matrices, which is the main work inside every layer of a language model. It does it first on the CPU cores and then on the GPU, and prints the speed in TFLOP/s, that is 10<sup>12</sup> floating point operations per second.</p>
 <x-code lang="bash" title="run it from an Alpha or Capella login node">
@@ -132,6 +135,7 @@ cat logs/gpu-check-<jobid>.out
     <h2>Train a tiny GPT</h2>
     <div class="meta-row"><span>04_tinygpt</span><span>Alpha or Capella</span><span>1 GPU</span><span>time limit 30 min</span></div>
   </div></div>
+  <div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> Martin asks for 6 attention heads and the job fails within seconds. Marie finds the reason in the <code>.err</code> file. <a href="story.html#scene-4">See what happened</a></p></div>
   <p><strong>You practise:</strong> a real training run as a batch job, watching the loss in the log, and using the result afterwards.</p>
   <p>The model is a small GPT that reads and writes single characters. It is the same model you build step by step in <a href="notebooks/5-attention-and-tinygpt.html">notebook 5</a>: 4 Transformer blocks, about 0.8 million parameters. It trains for 5000 steps on tiny Shakespeare, about 1 MB of plays in one text file.</p>
 <x-code lang="bash" title="run it">
@@ -188,6 +192,7 @@ sbatch --time=00:02:00 train.sbatch
     <h2>A learning-rate sweep with a job array</h2>
     <div class="meta-row"><span>05_sweep</span><span>Alpha or Capella</span><span>4 × 1 GPU</span><span>time limit 20 min each</span></div>
   </div></div>
+  <div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> Marie starts the sweep from a fresh terminal and the script refuses to run. <a href="story.html#scene-5">See what happened</a></p></div>
   <p><strong>You practise:</strong> job arrays with <code>--array</code>, and jobs that wait for other jobs with <code>--dependency=afterok</code>.</p>
   <p>Which learning rate is best for the tiny GPT? Instead of trying four values one after the other, you send one array job. Slurm starts the same script four times, each on its own GPU. The only thing that changes is <code>$SLURM_ARRAY_TASK_ID</code>, which goes from 0 to 3 and picks the learning rate. A second, tiny job waits until all four are done and prints a table.</p>
 <x-code lang="bash" title="run it">
@@ -221,6 +226,7 @@ best: lr-…  (val loss …)
     <h2>Run a pretrained LLM</h2>
     <div class="meta-row"><span>06_hf_generate</span><span>Alpha or Capella</span><span>1 GPU</span><span>time limit 15 min</span></div>
   </div></div>
+  <div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> Martin skips the download, and the job fails. Then the model finally answers the question about Dresden. <a href="story.html#scene-6">See what happened</a></p></div>
   <p><strong>You practise:</strong> getting a model from Hugging Face into your workspace, and running it over a whole file of prompts as a GPU job.</p>
   <p>The model is <code>Qwen/Qwen2.5-0.5B-Instruct</code>. It has 0.5 billion parameters, speaks many languages and needs about 1 GB of GPU memory. First you download it once on the login node. Then the job loads it from your workspace and answers every line of <code>prompts.txt</code>.</p>
 <x-code lang="bash" title="run it">

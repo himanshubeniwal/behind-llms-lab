@@ -17,6 +17,8 @@ The pages may use a few helper tags:
     <x-code lang="bash" title="...">raw text</x-code>      a highlighted snippet with a copy button
     <x-file path="hpc_lab/01_hello/hello.sbatch" open>     a whole file from the repository
     <x-math>x_t</x-math>   <x-math block>...</x-math>      LaTeX, turned into MathML (see texmath.py)
+    <x-code lang="term" title="...">$ typed line</x-code>   a terminal transcript ("!! " marks an error line)
+    <x-who marie/>  <x-who martin/>                        the two people of the running example
     <x-notebooks/>  <x-slides/>                            the notebook cards and the list of slides
     {{root}} {{repo}} {{clone}} {{zip}}                    paths and links
 """
@@ -44,6 +46,7 @@ BRANCH = "main"
 SITE_NAME = "Behind the Secrets of LLMs"
 NAV = [                                       # page file (without .html) and its label in the menu
     ("index", "Overview"),
+    ("story", "Story"),
     ("clusters", "Clusters"),
     ("setup", "Setup"),
     ("lab", "HPC lab"),
@@ -116,6 +119,38 @@ def code_block(text, lang="text", title="", link="", extra_class=""):
     bar += '<button class="copy" type="button" aria-label="Copy the code">Copy</button>'
     return (f'<figure class="code {extra_class}"><figcaption>{bar}</figcaption>'
             f'<pre tabindex="0"><code class="hl">{highlight_code(text, lang)}</code></pre></figure>')
+
+
+def term_block(text, title=""):
+    """A terminal transcript. '$ ' starts a typed line, '!! ' an error, a line in (brackets) is a remark."""
+    out = []
+    for line in text.strip("\n").split("\n"):
+        shown = esc(line).replace("&lt;zih-login&gt;", '<span class="zih">&lt;zih-login&gt;</span>')
+        if line.startswith("$ "):
+            cmd, sep, note = shown[2:].partition("  # ")
+            note = f'<span class="t-note">{sep}{note}</span>' if sep else ""
+            out.append(f'<span class="t-pr">$</span> <span class="t-cmd">{cmd}</span>{note}')
+        elif line.startswith("!! "):
+            out.append(f'<span class="t-err">{shown[3:]}</span>')
+        elif line.strip().startswith("("):
+            out.append(f'<span class="t-note">{shown}</span>')
+        else:
+            out.append(f'<span class="t-out">{shown}</span>')
+    bar = (f'<span class="code-title">{esc(title)}</span>' if title else "") + '<span class="code-lang">terminal</span>'
+    return (f'<figure class="code term"><figcaption>{bar}</figcaption>'
+            f'<pre tabindex="0"><code>{chr(10).join(out)}</code></pre></figure>')
+
+
+WHO = {   # Marie and Martin are the two example users of the ZIH documentation
+    "marie": ("Marie", "", '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5" fill="none" stroke="currentColor" '
+                           'stroke-width="2.4"/><path d="m15 15 5 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>'),
+    "martin": ("Martin", " b", '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"/></svg>'),
+}
+
+
+def who(name):
+    label, cls, icon = WHO[name]
+    return f'<span class="who"><i class="avatar{cls}">{icon}</i><b>{label}</b></span>'
 
 
 def file_block(path, is_open=False):
@@ -337,6 +372,8 @@ def expand(body, ctx):
     def x_code(m):
         attrs = dict(re.findall(r'(\w+)="([^"]*)"', m.group(1)))
         text = m.group(2).strip("\n")
+        if attrs.get("lang") == "term":
+            return term_block(text, attrs.get("title", ""))
         return code_block(text, attrs.get("lang", "bash"), attrs.get("title", ""),
                           extra_class="output" if attrs.get("lang") == "text" else "")
 
@@ -348,6 +385,7 @@ def expand(body, ctx):
     body = re.sub(r"<x-file([^>]*?)/?>", x_file, body)
     body = re.sub(r"<x-math block>(.*?)</x-math>", lambda m: tex_to_mathml(html.unescape(m.group(1)), True), body, flags=re.S)
     body = re.sub(r"<x-math>(.*?)</x-math>", lambda m: tex_to_mathml(html.unescape(m.group(1))), body, flags=re.S)
+    body = re.sub(r"<x-who (marie|martin)/>", lambda m: who(m.group(1)), body)
     body = re.sub(r'<x-repeat n="(\d+)"/>', lambda m: "<i></i>" * int(m.group(1)), body)
     body = body.replace("<x-notebooks/>", notebook_cards(ctx["notebooks"], root))
     body = body.replace("<x-slides/>", slides_html(ctx["slides"], root))

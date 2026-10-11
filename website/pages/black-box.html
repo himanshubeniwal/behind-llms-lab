@@ -4,6 +4,8 @@ eyebrow: Step 6 · behind the secrets
 lead: People call language models black boxes. That is half true. For an open model you can read every single number inside it. What is hard is saying what those numbers mean. This page sorts out what you can see, how to look, and where the open questions start.
 description: What it means that a large language model is a black box, what you can observe inside a model with the tools from this course, and what remains hard to explain.
 -->
+<div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> At the end of their story a model answers a question about Dresden in smooth, confident sentences. Marie asks the question this page is about: how would we know if it is right? <a href="story.html#scene-6">Read the last scene</a></p></div>
+
 <h2>Two different black boxes</h2>
 <p class="lede">The phrase is used for two things that have little to do with each other. It helps to keep them apart.</p>
 <div class="compare">
@@ -72,6 +74,7 @@ description: What it means that a large language model is a black box, what you 
   <li><strong>Take away the order.</strong> Remove the position embeddings. How much worse does the model get, and why can attention not tell positions apart by itself? (Notebook 5, exercise 2.)</li>
   <li><strong>Find memorised text.</strong> Look for a sentence of 15 or more words with a GPT-2 perplexity below 5. (Notebook 6, exercise 2.)</li>
   <li><strong>Break a classifier with wording.</strong> Change only the template of the zero-shot classifier and watch the accuracy. (Notebook 6, exercise 4.)</li>
+  <li><strong>Find the Elbe.</strong> In notebook 6, ask GPT-2 for the ten most likely tokens after <em>The Elbe flows through</em> (section 3). Which of them are true? How much probability goes to wrong ones?</li>
   <li><strong>Ask in three languages.</strong> In <a href="lab.html#ex6">exercise 6</a>, do the German and Hindi prompts get answers in the same language? Count the tokens of each prompt first.</li>
   <li><strong>Compare two brains.</strong> Train the tiny GPT in notebook 5 a second time with another number in <code>torch.manual_seed</code> in the first cell. Does the loss end up in the same place? Do the attention maps look the same?</li>
 </ol>

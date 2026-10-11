@@ -124,7 +124,7 @@ mkdir -p logs && sbatch generate.sbatch
     <tr><td><code>OUT_OF_MEMORY</code> in <code>sacct</code></td><td>Ask for more memory with <code>--mem</code>.</td></tr>
     <tr><td>The job waits for a long time.</td><td>Ask for less time or fewer GPUs, and check <code>whypending &lt;jobid&gt;</code>.</td></tr>
     <tr><td>The log stays empty while the job runs.</td><td>Python is buffering. Use <code>python -u</code> or <code>print(..., flush=True)</code>.</td></tr>
-    <tr><td><code>run 'source ../00_setup/setup_env.sh' first</code></td><td><code>$WS_DIR</code> is not set in this shell. Do what the message says.</td></tr>
+    <tr><td class="wrap-code"><code>WS_DIR: run source ../00_setup/setup_env.sh first</code></td><td><code>$WS_DIR</code> is not set in this shell. Do what the message says.</td></tr>
     <tr><td>A model cannot be found in a job with <code>HF_HUB_OFFLINE=1</code></td><td>It was never downloaded. On the login node: <code>python generate.py --download-only --model &lt;name&gt;</code>.</td></tr>
     <tr><td><code>ssh</code> does not connect at all</td><td>You are not on the university network. Start the VPN.</td></tr>
   </tbody>
