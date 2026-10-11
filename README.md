@@ -67,6 +67,7 @@ pip install markdown pygments
 python website/build.py
 ```
 
+The link to the slides is `SLIDES_URL` at the top of `website/build.py`.
 Every PDF you put into a folder `slides/` gets its own entry on a Slides page.
 
 Questions about the cluster itself: see the [ZIH HPC Compendium](https://compendium.hpc.tu-dresden.de)

@@ -20,7 +20,7 @@ The pages may use a few helper tags:
     <x-code lang="term" title="...">$ typed line</x-code>   a terminal transcript ("!! " marks an error line)
     <x-who marie/>  <x-who martin/>                        the two people of the running example
     <x-notebooks/>  <x-slides/>                            the notebook cards and the list of slides
-    {{root}} {{repo}} {{clone}} {{zip}}                    paths and links
+    {{root}} {{repo}} {{clone}} {{zip}} {{slides}}         paths and links
 """
 import base64
 import hashlib
@@ -44,6 +44,7 @@ from texmath import tex_to_mathml  # noqa: E402
 REPO = "himanshubeniwal/behind-llms-lab"      # GitHub user/repository
 BRANCH = "main"
 SITE_NAME = "Behind the Secrets of LLMs"
+SLIDES_URL = "https://docs.google.com/presentation/d/1RCPS38JQUTXLt8AOsIoLbY4bBjBAqfeKwAVf2E6n13Y/edit?usp=sharing"      # the slides of the session, used as {{slides}} in the pages
 NAV = [                                       # page file (without .html) and its label in the menu
     ("index", "Overview"),
     ("story", "Story"),
@@ -68,6 +69,7 @@ LINKS = {
     "blob": f"{REPO_URL}/blob/{BRANCH}",
     "raw": f"https://raw.githubusercontent.com/{REPO}/{BRANCH}",
     "colab": f"https://colab.research.google.com/github/{REPO}/blob/{BRANCH}",
+    "slides": SLIDES_URL,
 }
 LEXERS = {".py": PythonLexer, ".sh": BashLexer, ".sbatch": BashLexer, "bash": BashLexer,
           "python": PythonLexer, "text": TextLexer, ".txt": TextLexer}
@@ -502,7 +504,7 @@ def layout(meta, body, ctx, slug, toc=()):
       <a href="{LINKS["zip"]}">Download everything (.zip)</a>
       <a href="{root}notebooks.html">Notebooks</a>
       <a href="{root}lab.html">HPC lab</a>
-      <a href="https://docs.google.com/presentation/d/1RCPS38JQUTXLt8AOsIoLbY4bBjBAqfeKwAVf2E6n13Y/edit?usp=sharing">Slides: HPC intro</a>
+      <a href="{SLIDES_URL}">Slides: HPC intro</a>
     </div>
     <div>
       <p class="foot-head">Help with the cluster</p>
