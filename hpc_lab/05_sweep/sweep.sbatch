@@ -11,6 +11,7 @@
 #SBATCH --job-name=lr-sweep
 #SBATCH --account=p_lv_llmsecrets
 #SBATCH --array=0-3                   # 4 tasks; with 0-3%2 at most 2 run at the same time
+#SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6
 #SBATCH --gres=gpu:1                  # every task gets its own GPU

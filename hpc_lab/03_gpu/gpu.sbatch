@@ -10,6 +10,7 @@
 #
 #SBATCH --job-name=gpu-check
 #SBATCH --account=p_lv_llmsecrets
+#SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6             # CPU cores that come with the GPU
 #SBATCH --gres=gpu:1                  # this is the line that gets you a GPU

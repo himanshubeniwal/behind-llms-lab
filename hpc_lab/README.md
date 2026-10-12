@@ -6,8 +6,8 @@ Python script and the Slurm job script that runs it.
 | folder | what you practise | where |
 |---|---|---|
 | `00_setup` | workspace, modules, venv, moving caches out of `$HOME` | Alpha or Capella |
-| `01_hello` | your first `sbatch`, Slurm variables, why `--cpus-per-task` matters | any cluster |
-| `02_cancel` | `squeue`, `scontrol`, `scancel`, `sacct`, and saving on SIGTERM | any cluster |
+| `01_hello` | your first `sbatch`, Slurm variables, why `--cpus-per-task` matters | Alpha, or Barnard without `--gres` |
+| `02_cancel` | `squeue`, `scontrol`, `scancel`, `sacct`, and saving on SIGTERM | Alpha, or Barnard without `--gres` |
 | `03_gpu` | `--gres=gpu:1`, `nvidia-smi`, CPU vs GPU speed | Alpha or Capella |
 | `04_tinygpt` | train a tiny GPT as a batch job and sample from it | Alpha or Capella |
 | `05_sweep` | job arrays (`--array`) and dependencies (`--dependency=afterok`) | Alpha or Capella |
@@ -27,6 +27,9 @@ ssh <zih-login>@login1.barnard.hpc.tu-dresden.de    # CPU cluster
 
 Every cluster has its own Slurm, so GPU jobs have to be sent from an Alpha or Capella login node.
 
+Two rules on Alpha: every job needs `--nodes=1`, and every job has to ask for a GPU with
+`--gres=gpu:1`, even one that only uses the CPU. The lab scripts already do both.
+
 Then get the lab kit:
 
 ```bash
@@ -37,7 +40,8 @@ cd behind-llms-lab/hpc_lab
 ## 2. Set up Python once (about 10 minutes)
 
 ```bash
-srun --account=p_lv_llmsecrets --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G \
+srun --account=p_lv_llmsecrets --nodes=1 --gres=gpu:1 \
+     --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G \
      --time=00:45:00 --pty bash -l          # a small interactive job
 cd ~/behind-llms-lab/hpc_lab
 source 00_setup/setup_env.sh                # workspace, venv, training text
@@ -46,6 +50,11 @@ exit                                        # give the machine back
 
 After that, `source 00_setup/setup_env.sh` only switches the environment on, which takes a second.
 The job scripts do this themselves.
+
+Prefer conda? `00_setup/conda/` builds a conda environment with PyTorch, transformers, pandas
+and evaluate instead: `mkdir -p logs && sbatch create_env.sbatch` there, then `sbatch job.sbatch`.
+The exercises keep using the venv. ZIH recommends the venv, and Anaconda's licence terms
+now cover TU Dresden, so the conda script installs only from conda-forge.
 
 ## 3. The exercises
 
@@ -65,8 +74,8 @@ mkdir -p logs && sbatch generate.sbatch
 |---|---|
 | see partitions and free nodes | `sinfo`, `sinfo -s`, `sinfo -o "%20P %5a %10l %6D %20G"` |
 | send a batch job | `sbatch job.sbatch` (options on the command line win over `#SBATCH` lines) |
-| a terminal on a compute node | `srun --account=p_lv_llmsecrets --ntasks=1 --cpus-per-task=2 --mem-per-cpu=2G --time=00:30:00 --pty bash -l` |
-| the same with a GPU | add `--gres=gpu:1` (on Alpha, for quick tests: `--partition=alpha-interactive`) |
+| a terminal on a compute node | `srun --account=p_lv_llmsecrets --nodes=1 --ntasks=1 --cpus-per-task=2 --mem-per-cpu=2G --gres=gpu:1 --time=00:30:00 --pty bash -l` (on Alpha, for quick tests: `--partition=alpha-interactive`) |
+| the same on Barnard (CPU only) | leave out `--gres=gpu:1` |
 | my jobs | `squeue --me`, and the expected start time with `squeue --me --start` |
 | why is my job waiting? | `whypending <jobid>` (a ZIH helper) or `scontrol show job <jobid>` |
 | cancel | `scancel <jobid>`, one array task: `scancel <jobid>_3`, all of mine: `scancel -u $USER` |
@@ -90,6 +99,9 @@ Keep data, models and caches out of `$HOME`. It is small and backed up, so it fi
 
 ## When something goes wrong
 
+* **`This is a GPU cluster, only GPU jobs are allowed` and `QOSMinGRES`.** The job asks for no GPU. On Alpha every job needs `--gres=gpu:1`.
+* **`Please always specify the node count`.** Add `#SBATCH --nodes=1`.
+* **`bad argument #2 to 'format' (no value)`.** A small bug in the cluster's submit check that comes with the two messages above. Read the line before it.
 * **The job ends at once and there is no log file.** The `logs/` folder is missing: `mkdir -p logs`.
 * **`CUDA available: False`.** You forgot `--gres=gpu:1`, or you sent the job from Barnard.
 * **`Disk quota exceeded` in `$HOME`.** The pip or Hugging Face caches are in your home folder. `source 00_setup/setup_env.sh` moves them to the workspace.

@@ -10,7 +10,7 @@
 <meta property="og:type" content="website">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="assets/site.css?v=a0add7ec">
+<link rel="stylesheet" href="assets/site.css?v=014c463f">
 <script>(function(){try{if(localStorage.getItem("theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}})()</script>
 </head>
 <body class="page-setup">
@@ -78,7 +78,9 @@ ssh<span class="w"> </span><span class="zih">&lt;zih-login&gt;</span>@login1.alp
   <li>
     <h3>Build the Python environment</h3>
     <p>Installing PyTorch is real work, so it does not belong on the login node. Ask Slurm for a small interactive job, run the setup script there, and give the machine back.</p>
-<figure class="code "><figcaption><span class="code-title">on the login node</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">srun<span class="w"> </span>--account<span class="o">=</span>p_lv_llmsecrets<span class="w"> </span>--ntasks<span class="o">=</span><span class="m">1</span><span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">4</span><span class="w"> </span>--mem-per-cpu<span class="o">=</span>2G<span class="w"> </span><span class="se">\</span>
+    <div class="callout note"><p><strong>Two lines every job needs on Alpha.</strong> <code>--nodes=1</code>, because ZIH wants the number of nodes in every job. And <code>--gres=gpu:1</code>, because Alpha only accepts jobs that ask for a GPU, even an installation that does not use one. Without them you get <code>QOSMinGRES</code> or a reminder about <code>-N</code>. On Barnard, leave out <code>--gres</code>.</p></div>
+<figure class="code "><figcaption><span class="code-title">on the login node</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">srun<span class="w"> </span>--account<span class="o">=</span>p_lv_llmsecrets<span class="w"> </span>--nodes<span class="o">=</span><span class="m">1</span><span class="w"> </span>--gres<span class="o">=</span>gpu:1<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>--ntasks<span class="o">=</span><span class="m">1</span><span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">4</span><span class="w"> </span>--mem-per-cpu<span class="o">=</span>2G<span class="w"> </span><span class="se">\</span>
 <span class="w">     </span>--time<span class="o">=</span><span class="m">00</span>:45:00<span class="w"> </span>--pty<span class="w"> </span>bash<span class="w"> </span>-l<span class="w">          </span><span class="c1"># a small interactive job</span>
 <span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab
 <span class="nb">source</span><span class="w"> </span>00_setup/setup_env.sh<span class="w">                </span><span class="c1"># workspace, venv, training text</span>
@@ -93,7 +95,7 @@ environment ready</code></pre></figure>
   </li>
   <li>
     <h3>Check that it works</h3>
-    <p>Send the first job of the lab. It needs no GPU and only runs for a few seconds once it starts.</p>
+    <p>Send the first job of the lab. Its work runs on the CPU and takes a few seconds once it starts. It still asks for a GPU, because Alpha takes nothing else.</p>
 <figure class="code "><figcaption><span class="code-title">on the login node</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/01_hello
 mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sbatch<span class="w"> </span>hello.sbatch
 squeue<span class="w"> </span>--me<span class="w">                                 </span><span class="c1"># PD means waiting, R means running</span>
@@ -213,6 +215,159 @@ mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;</
   </tbody>
 </table></div>
 
+<h2 id="prefer-conda">Prefer conda?<a class="anchor" href="#prefer-conda" aria-label="Link to this section">#</a></h2>
+<p>The venv above is what the lab uses and what ZIH recommends. If you are used to conda, the folder <code>00_setup/conda</code> builds a similar environment with conda instead: PyTorch, transformers, pandas and evaluate, in a workspace of its own called <code>llm-conda</code>. It does not touch the lab venv, and the exercises keep using the venv.</p>
+<div class="callout warn"><p><strong>Anaconda has a licence.</strong> Anaconda's terms now cover universities of TU Dresden's size, and TU Dresden has no central licence. So the script installs only from conda-forge. If in doubt, use the venv.</p></div>
+<figure class="code "><figcaption><span class="code-title">on an Alpha login node</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="nb">cd</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/00_setup/conda
+mkdir<span class="w"> </span>-p<span class="w"> </span>logs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sbatch<span class="w"> </span>create_env.sbatch<span class="w">   </span><span class="c1"># once, about 10 to 15 minutes</span>
+cat<span class="w"> </span>logs/create-env-*.out<span class="w">                   </span><span class="c1"># the last line should say  OK | CUDA: True</span>
+sbatch<span class="w"> </span>job.sbatch<span class="w">                           </span><span class="c1"># runs check_env.py in the environment</span>
+cat<span class="w"> </span>logs/conda-job-*.out<span class="w">                    </span><span class="c1"># ends with  ALL GOOD</span></code></pre></figure>
+<p>Three things work differently from conda on your laptop:</p>
+<ul>
+  <li><strong>No <code>conda init</code>.</strong> ZIH asks you not to use it. Load the module and source <code>conda.sh</code> instead, in every shell and in every job, as <code>job.sbatch</code> does.</li>
+  <li><strong>The environment lives in a workspace</strong>, given with <code>--prefix</code>, not in <code>~/.conda</code>. Workspaces expire: check with <code>ws_list</code> and extend with <code>ws_extend -F horse llm-conda 30</code>.</li>
+  <li><strong><code>pip</code> needs <code>PIP_REQUIRE_VIRTUALENV=false</code></strong> inside a conda environment, because pip on ZIH systems refuses to run outside a venv.</li>
+</ul>
+<figure class="code "><figcaption><span class="code-title">add a package to the conda environment</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">srun<span class="w"> </span>--account<span class="o">=</span>p_lv_llmsecrets<span class="w"> </span>--nodes<span class="o">=</span><span class="m">1</span><span class="w"> </span>--ntasks<span class="o">=</span><span class="m">1</span><span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">4</span><span class="w"> </span>--mem-per-cpu<span class="o">=</span>2G<span class="w"> </span>--gres<span class="o">=</span>gpu:1<span class="w"> </span>--time<span class="o">=</span><span class="m">00</span>:30:00<span class="w"> </span>--pty<span class="w"> </span>bash<span class="w"> </span>-l
+module<span class="w"> </span>load<span class="w"> </span>Anaconda3<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span><span class="nv">$EBROOTANACONDA3</span>/etc/profile.d/conda.sh
+conda<span class="w"> </span>activate<span class="w"> </span><span class="k">$(</span>ws_find<span class="w"> </span>-F<span class="w"> </span>horse<span class="w"> </span>llm-conda<span class="k">)</span>/env
+<span class="nv">PIP_REQUIRE_VIRTUALENV</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>datasets<span class="w">     </span><span class="c1"># or whatever you need</span>
+<span class="nb">exit</span></code></pre></figure>
+<details class="file"><summary><span class="file-name">create_env.sbatch</span><span class="file-meta">46 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/00_setup/conda/create_env.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/00_setup/conda/create_env.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+<span class="c1"># The conda route, an alternative to setup_env.sh for people who prefer conda.</span>
+<span class="c1"># Builds a conda environment with PyTorch, transformers, pandas and evaluate in its</span>
+<span class="c1"># own workspace. Run it once, from this folder, on an Alpha login node:</span>
+<span class="c1">#</span>
+<span class="c1">#   cd ~/behind-llms-lab/hpc_lab/00_setup/conda</span>
+<span class="c1">#   mkdir -p logs &amp;&amp; sbatch create_env.sbatch</span>
+<span class="c1">#   cat logs/create-env-&lt;jobid&gt;.out          # the last line should say OK</span>
+<span class="c1">#</span>
+<span class="c1"># Running it again builds the environment from scratch.</span>
+<span class="c1">#</span>
+<span class="c1"># ZIH recommends the venv from setup_env.sh. Anaconda&#39;s licence now covers universities</span>
+<span class="c1"># of TU Dresden&#39;s size and TU Dresden has no central licence, so this script installs</span>
+<span class="c1"># only from conda-forge. If in doubt, use the venv.</span>
+<span class="c1">#</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">create-env</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_lv_llmsecrets</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--nodes</span>=<span class="sbv">1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">6</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--gres</span>=<span class="sbv">gpu:1</span>                  <span class="c1"># Alpha takes only GPU jobs, and the last line tests CUDA</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--mem</span>=<span class="sbv">32G</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--time</span>=<span class="sbv">01:00:00</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--output</span>=<span class="sbv">logs/%x-%j.out</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--error</span>=<span class="sbv">logs/%x-%j.err</span>
+
+<span class="nv">WS_NAME</span><span class="o">=</span>llm-conda
+
+module<span class="w"> </span>purge
+module<span class="w"> </span>load<span class="w"> </span>Anaconda3<span class="w">                                 </span><span class="c1"># if this fails: module spider Anaconda3</span>
+<span class="nb">source</span><span class="w"> </span><span class="nv">$EBROOTANACONDA3</span>/etc/profile.d/conda.sh<span class="w">        </span><span class="c1"># ZIH asks for this instead of &quot;conda init&quot;</span>
+
+<span class="c1"># The environment lives in its own workspace, not in the small $HOME</span>
+ws_allocate<span class="w"> </span>-F<span class="w"> </span>horse<span class="w"> </span><span class="nv">$WS_NAME</span><span class="w"> </span><span class="m">30</span><span class="w"> </span>&gt;<span class="w"> </span>/dev/null
+<span class="nv">ENV</span><span class="o">=</span><span class="k">$(</span>ws_find<span class="w"> </span>-F<span class="w"> </span>horse<span class="w"> </span><span class="nv">$WS_NAME</span><span class="k">)</span>/env
+
+conda<span class="w"> </span>create<span class="w"> </span>-y<span class="w"> </span>--prefix<span class="w"> </span><span class="nv">$ENV</span><span class="w"> </span>--override-channels<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.11<span class="w"> </span>pip
+conda<span class="w"> </span>activate<span class="w"> </span><span class="nv">$ENV</span>
+
+<span class="c1"># pip on ZIH systems refuses to run outside a venv, and a conda env does not count as one</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PIP_REQUIRE_VIRTUALENV</span><span class="o">=</span><span class="nb">false</span>
+<span class="c1"># PyTorch for CUDA 12.x fits the drivers on Alpha and Capella (see setup_env.sh)</span>
+pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>torch<span class="w"> </span>--index-url<span class="w"> </span>https://download.pytorch.org/whl/cu128
+pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>transformers<span class="w"> </span>pandas<span class="w"> </span>evaluate
+
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import torch, transformers, pandas, evaluate; print(&#39;OK | CUDA:&#39;, torch.cuda.is_available())&quot;</span></code></pre></figure></details>
+<details class="file"><summary><span class="file-name">job.sbatch</span><span class="file-meta">30 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/00_setup/conda/job.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/00_setup/conda/job.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+<span class="c1"># The conda route: a job that runs a Python script inside the conda environment.</span>
+<span class="c1"># Run create_env.sbatch once first. Then, from this folder:</span>
+<span class="c1">#</span>
+<span class="c1">#   mkdir -p logs &amp;&amp; sbatch job.sbatch</span>
+<span class="c1">#   cat logs/conda-job-&lt;jobid&gt;.out           # ends with ALL GOOD</span>
+<span class="c1">#</span>
+<span class="c1"># For your own code, copy this file and change the last line.</span>
+<span class="c1">#</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">conda-job</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_lv_llmsecrets</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--nodes</span>=<span class="sbv">1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">6</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--gres</span>=<span class="sbv">gpu:1</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--mem</span>=<span class="sbv">32G</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--time</span>=<span class="sbv">00:30:00</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--output</span>=<span class="sbv">logs/%x-%j.out</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--error</span>=<span class="sbv">logs/%x-%j.err</span>
+
+<span class="nv">WS_NAME</span><span class="o">=</span>llm-conda
+
+module<span class="w"> </span>purge
+module<span class="w"> </span>load<span class="w"> </span>Anaconda3
+<span class="nb">source</span><span class="w"> </span><span class="nv">$EBROOTANACONDA3</span>/etc/profile.d/conda.sh
+conda<span class="w"> </span>activate<span class="w"> </span><span class="k">$(</span>ws_find<span class="w"> </span>-F<span class="w"> </span>horse<span class="w"> </span><span class="nv">$WS_NAME</span><span class="k">)</span>/env
+<span class="nb">export</span><span class="w"> </span><span class="nv">HF_HOME</span><span class="o">=</span><span class="k">$(</span>ws_find<span class="w"> </span>-F<span class="w"> </span>horse<span class="w"> </span><span class="nv">$WS_NAME</span><span class="k">)</span>/hf-cache<span class="w">   </span><span class="c1"># downloaded models go to the workspace, not $HOME</span>
+
+<span class="nb">export</span><span class="w"> </span><span class="nv">SRUN_CPUS_PER_TASK</span><span class="o">=</span><span class="nv">$SLURM_CPUS_PER_TASK</span>
+srun<span class="w"> </span>python<span class="w"> </span>-u<span class="w"> </span>check_env.py</code></pre></figure></details>
+<details class="file"><summary><span class="file-name">check_env.py</span><span class="file-meta">57 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/00_setup/conda/check_env.py</span><span class="code-lang">python</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/00_setup/conda/check_env.py">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="sd">&quot;&quot;&quot;The conda route: check that the environment works on a GPU node.</span>
+
+<span class="sd">Run it with job.sbatch. It tests the GPU, transformers, pandas and evaluate,</span>
+<span class="sd">and ends with ALL GOOD. The first run downloads a small model (about 250 MB).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">evaluate</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">transformers</span>
+<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">pipeline</span>
+
+<span class="c1"># 1. Versions</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;torch </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2"> | transformers </span><span class="si">{</span><span class="n">transformers</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2"> | &quot;</span>
+      <span class="sa">f</span><span class="s2">&quot;pandas </span><span class="si">{</span><span class="n">pd</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2"> | evaluate </span><span class="si">{</span><span class="n">evaluate</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># 2. GPU</span>
+<span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">(),</span> <span class="s2">&quot;No GPU visible. Is &#39;#SBATCH --gres=gpu:1&#39; in the job script?&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;GPU:&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">get_device_name</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">@</span> <span class="n">x</span>  <span class="c1"># warm-up</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">x</span> <span class="o">@</span> <span class="n">x</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;4096x4096 matmul: </span><span class="si">{</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+
+<span class="c1"># 3. transformers: a small sentiment model on the GPU</span>
+<span class="n">clf</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span>
+    <span class="s2">&quot;sentiment-analysis&quot;</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;distilbert/distilbert-base-uncased-finetuned-sst-2-english&quot;</span><span class="p">,</span>
+    <span class="n">device</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">texts</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;The cluster finally runs my jobs.&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Waiting in the queue all day is awful.&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;This environment setup was painless.&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;The error messages were confusing.&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># 1 = positive, 0 = negative</span>
+<span class="n">preds</span> <span class="o">=</span> <span class="n">clf</span><span class="p">(</span><span class="n">texts</span><span class="p">)</span>
+
+<span class="c1"># 4. pandas</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">texts</span><span class="p">,</span>
+    <span class="s2">&quot;pred&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">preds</span><span class="p">],</span>
+    <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">preds</span><span class="p">],</span>
+<span class="p">})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+
+<span class="c1"># 5. evaluate</span>
+<span class="n">accuracy</span> <span class="o">=</span> <span class="n">evaluate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;accuracy&quot;</span><span class="p">)</span>
+<span class="n">pred_ids</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span> <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;POSITIVE&quot;</span> <span class="k">else</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">preds</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;accuracy:&quot;</span><span class="p">,</span> <span class="n">accuracy</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">pred_ids</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)[</span><span class="s2">&quot;accuracy&quot;</span><span class="p">])</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ALL GOOD&quot;</span><span class="p">)</span></code></pre></figure></details>
+
 <h2 id="where-to-run-the-notebooks">Where to run the notebooks<a class="anchor" href="#where-to-run-the-notebooks" aria-label="Link to this section">#</a></h2>
 <div class="grid three">
   <div class="card c-blue"><p class="eyebrow">the easy way</p><h3>Google Colab</h3><p>Nothing to install. Use the buttons on the <a href="notebooks.html">Notebooks</a> page. For notebooks 5 and 6, choose a T4 GPU under Runtime &gt; Change runtime type.</p></div>
@@ -228,7 +383,7 @@ mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;</
   <li><strong>Write a job script.</strong> Copy the one from the exercise that is closest to what you want and change the last line, or use the generator below.</li>
   <li><strong>Send it and watch it.</strong> <code>sbatch</code>, <code>squeue --me</code>, <code>tail -f logs/…</code>. The <a href="cheatsheet.html">cheat sheet</a> has the rest.</li>
 </ol>
-<figure class="code "><figcaption><span class="code-title">add a package to the lab environment</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">srun<span class="w"> </span>--account<span class="o">=</span>p_lv_llmsecrets<span class="w"> </span>--ntasks<span class="o">=</span><span class="m">1</span><span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">4</span><span class="w"> </span>--mem-per-cpu<span class="o">=</span>2G<span class="w"> </span>--time<span class="o">=</span><span class="m">00</span>:30:00<span class="w"> </span>--pty<span class="w"> </span>bash<span class="w"> </span>-l
+<figure class="code "><figcaption><span class="code-title">add a package to the lab environment</span><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">srun<span class="w"> </span>--account<span class="o">=</span>p_lv_llmsecrets<span class="w"> </span>--nodes<span class="o">=</span><span class="m">1</span><span class="w"> </span>--ntasks<span class="o">=</span><span class="m">1</span><span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">4</span><span class="w"> </span>--mem-per-cpu<span class="o">=</span>2G<span class="w"> </span>--gres<span class="o">=</span>gpu:1<span class="w"> </span>--time<span class="o">=</span><span class="m">00</span>:30:00<span class="w"> </span>--pty<span class="w"> </span>bash<span class="w"> </span>-l
 <span class="nb">source</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/00_setup/setup_env.sh
 pip<span class="w"> </span>install<span class="w"> </span>datasets<span class="w">                        </span><span class="c1"># or whatever you need</span>
 <span class="nb">exit</span></code></pre></figure>
@@ -251,7 +406,7 @@ pip<span class="w"> </span>install<span class="w"> </span>datasets<span class="w
 <span class="nb">export</span><span class="w"> </span><span class="nv">WS_NAME</span><span class="o">=</span>my-project
 <span class="nb">source</span><span class="w"> </span>~/behind-llms-lab/hpc_lab/00_setup/setup_env.sh</code></pre></figure>
 <div class="callout warn"><p><strong>The course project is for the course.</strong> Jobs with <code>--account=p_lv_llmsecrets</code> are booked on the course. For your thesis or your own research, ask your supervisor which HPC project to use and put its name there.</p></div>
-</article><aside class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#before-you-start">Before you start</a></li><li><a href="#the-four-steps">The four steps</a></li><li><a href="#the-setup-script">The setup script</a></li><li><a href="#where-to-run-the-notebooks">Where to run the notebooks</a></li><li><a href="#your-own-experiments">Your own experiments</a></li></ol></aside></div><nav class="pager wrap" aria-label="Previous and next page"><a class="pager-prev" href="clusters.html"><span>Previous</span>Clusters</a><a class="pager-next" href="lab.html"><span>Next</span>HPC lab</a></nav>
+</article><aside class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#before-you-start">Before you start</a></li><li><a href="#the-four-steps">The four steps</a></li><li><a href="#the-setup-script">The setup script</a></li><li><a href="#prefer-conda">Prefer conda?</a></li><li><a href="#where-to-run-the-notebooks">Where to run the notebooks</a></li><li><a href="#your-own-experiments">Your own experiments</a></li></ol></aside></div><nav class="pager wrap" aria-label="Previous and next page"><a class="pager-prev" href="clusters.html"><span>Previous</span>Clusters</a><a class="pager-next" href="lab.html"><span>Next</span>HPC lab</a></nav>
 </main>
 <footer class="foot">
   <div class="wrap foot-in">
@@ -277,6 +432,6 @@ pip<span class="w"> </span>install<span class="w"> </span>datasets<span class="w
     </div>
   </div>
 </footer>
-<script src="assets/site.js?v=a0add7ec" defer></script><script src="assets/widgets.js?v=a0add7ec" defer></script>
+<script src="assets/site.js?v=014c463f" defer></script><script src="assets/widgets.js?v=014c463f" defer></script>
 </body>
 </html>

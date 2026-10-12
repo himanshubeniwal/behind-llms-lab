@@ -18,8 +18,8 @@ ssh <zih-login>@login1.barnard.hpc.tu-dresden.de    # CPU cluster
   <tbody>
     <tr><td>see partitions and free nodes</td><td class="wrap-code"><code>sinfo</code>, <code>sinfo -s</code>, <code>sinfo -o "%20P %5a %10l %6D %20G"</code></td></tr>
     <tr><td>send a batch job</td><td class="wrap-code"><code>sbatch job.sbatch</code><br>Options on the command line win over <code>#SBATCH</code> lines.</td></tr>
-    <tr><td>a terminal on a compute node</td><td class="wrap-code"><code>srun --account=p_lv_llmsecrets --ntasks=1 --cpus-per-task=2 --mem-per-cpu=2G --time=00:30:00 --pty bash -l</code></td></tr>
-    <tr><td>the same with a GPU</td><td class="wrap-code">add <code>--gres=gpu:1</code><br>On Alpha, for quick tests: <code>--partition=alpha-interactive</code></td></tr>
+    <tr><td>a terminal on a compute node</td><td class="wrap-code"><code>srun --account=p_lv_llmsecrets --nodes=1 --ntasks=1 --cpus-per-task=2 --mem-per-cpu=2G --gres=gpu:1 --time=00:30:00 --pty bash -l</code><br>On Alpha, for quick tests: <code>--partition=alpha-interactive</code> (1 GPU, 1 core, 20 GB)</td></tr>
+    <tr><td>the same on Barnard (CPU only)</td><td class="wrap-code">leave out <code>--gres=gpu:1</code></td></tr>
     <tr><td>my jobs</td><td class="wrap-code"><code>squeue --me</code><br>with the expected start time: <code>squeue --me --start</code></td></tr>
     <tr><td>why is my job waiting?</td><td class="wrap-code"><code>whypending &lt;jobid&gt;</code> (a ZIH helper) or <code>scontrol show job &lt;jobid&gt;</code></td></tr>
     <tr><td>cancel</td><td class="wrap-code"><code>scancel &lt;jobid&gt;</code><br>one array task: <code>scancel &lt;jobid&gt;_3</code><br>all of mine: <code>scancel -u $USER</code></td></tr>
@@ -49,6 +49,7 @@ ssh <zih-login>@login1.barnard.hpc.tu-dresden.de    # CPU cluster
 #!/bin/bash
 #SBATCH --job-name=tinygpt            # the name you see in squeue
 #SBATCH --account=p_lv_llmsecrets      # the project that pays for the time
+#SBATCH --nodes=1                     # one machine, ZIH wants this line in every job
 #SBATCH --ntasks=1                    # one process
 #SBATCH --cpus-per-task=6             # CPU cores that come with the GPU
 #SBATCH --gres=gpu:1                  # this is the line that gets you a GPU
@@ -117,6 +118,9 @@ mkdir -p logs && sbatch generate.sbatch
 <div class="table-wrap"><table>
   <thead><tr><th>What you see</th><th>What it usually is</th></tr></thead>
   <tbody>
+    <tr><td class="wrap-code"><code>This is a GPU cluster, only GPU jobs are allowed</code> and <code>QOSMinGRES</code></td><td>The job asks for no GPU. On Alpha every job needs <code>--gres=gpu:1</code>, even one that only uses the CPU.</td></tr>
+    <tr><td class="wrap-code"><code>Please always specify the node count</code></td><td>Add <code>#SBATCH --nodes=1</code>. The job is still accepted, but ZIH wants the line.</td></tr>
+    <tr><td class="wrap-code"><code>bad argument #2 to 'format' (no value)</code></td><td>A small bug in the cluster's submit check. It comes with the two messages above and does no harm on its own; read the line before it.</td></tr>
     <tr><td>The job ends at once and there is no log file.</td><td>The <code>logs/</code> folder is missing. Run <code>mkdir -p logs</code>.</td></tr>
     <tr><td><code>CUDA available: False</code></td><td>You forgot <code>--gres=gpu:1</code>, or you sent the job from Barnard.</td></tr>
     <tr><td><code>Disk quota exceeded</code> in <code>$HOME</code></td><td>The pip or Hugging Face caches are in your home folder. <code>source 00_setup/setup_env.sh</code> moves them to the workspace.</td></tr>

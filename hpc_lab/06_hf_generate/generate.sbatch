@@ -12,6 +12,7 @@
 #
 #SBATCH --job-name=hf-generate
 #SBATCH --account=p_lv_llmsecrets
+#SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6
 #SBATCH --gres=gpu:1

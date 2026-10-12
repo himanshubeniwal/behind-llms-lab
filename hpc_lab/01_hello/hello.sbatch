@@ -1,5 +1,8 @@
 #!/bin/bash
-# Exercise 1: your first batch job (CPU only, works on any cluster)
+# Exercise 1: your first batch job (the work itself runs on the CPU)
+#
+# Alpha only accepts jobs that ask for a GPU, so this script asks for one even
+# though it does not use it. On Barnard (no GPUs), delete the --gres line.
 #
 # Submit it from a login node:
 #   mkdir -p logs && sbatch hello.sbatch
@@ -10,13 +13,15 @@
 #
 # Then try other core counts without editing this file:
 #   sbatch --cpus-per-task=1 hello.sbatch
-#   sbatch --cpus-per-task=8 hello.sbatch
+#   sbatch --cpus-per-task=6 hello.sbatch   (6 cores per GPU is the most Alpha allows)
 #
 #SBATCH --job-name=hello-hpc          # the name you see in squeue
 #SBATCH --account=p_lv_llmsecrets      # our course project, it pays for the CPU time
+#SBATCH --nodes=1                     # one machine (ZIH wants this line in every job)
 #SBATCH --ntasks=1                    # one process
 #SBATCH --cpus-per-task=4             # with 4 cores
 #SBATCH --mem-per-cpu=1G              # memory per core
+#SBATCH --gres=gpu:1                  # Alpha takes only GPU jobs; on Barnard delete this line
 #SBATCH --time=00:05:00               # hard time limit, hh:mm:ss
 #SBATCH --output=logs/%x-%j.out       # %x is the job name, %j the job ID
 #SBATCH --error=logs/%x-%j.err        # the logs folder has to exist before you submit

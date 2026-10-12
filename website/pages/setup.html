@@ -65,8 +65,10 @@ cd behind-llms-lab/hpc_lab
   <li>
     <h3>Build the Python environment</h3>
     <p>Installing PyTorch is real work, so it does not belong on the login node. Ask Slurm for a small interactive job, run the setup script there, and give the machine back.</p>
+    <div class="callout note"><p><strong>Two lines every job needs on Alpha.</strong> <code>--nodes=1</code>, because ZIH wants the number of nodes in every job. And <code>--gres=gpu:1</code>, because Alpha only accepts jobs that ask for a GPU, even an installation that does not use one. Without them you get <code>QOSMinGRES</code> or a reminder about <code>-N</code>. On Barnard, leave out <code>--gres</code>.</p></div>
 <x-code lang="bash" title="on the login node">
-srun --account=p_lv_llmsecrets --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G \
+srun --account=p_lv_llmsecrets --nodes=1 --gres=gpu:1 \
+     --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G \
      --time=00:45:00 --pty bash -l          # a small interactive job
 cd ~/behind-llms-lab/hpc_lab
 source 00_setup/setup_env.sh                # workspace, venv, training text
@@ -84,7 +86,7 @@ environment ready
   </li>
   <li>
     <h3>Check that it works</h3>
-    <p>Send the first job of the lab. It needs no GPU and only runs for a few seconds once it starts.</p>
+    <p>Send the first job of the lab. Its work runs on the CPU and takes a few seconds once it starts. It still asks for a GPU, because Alpha takes nothing else.</p>
 <x-code lang="bash" title="on the login node">
 cd ~/behind-llms-lab/hpc_lab/01_hello
 mkdir -p logs && sbatch hello.sbatch
@@ -120,6 +122,33 @@ cat logs/hello-hpc-*.out                    # when the job is gone from the queu
   </tbody>
 </table></div>
 
+<h2 id="prefer-conda">Prefer conda?</h2>
+<p>The venv above is what the lab uses and what ZIH recommends. If you are used to conda, the folder <code>00_setup/conda</code> builds a similar environment with conda instead: PyTorch, transformers, pandas and evaluate, in a workspace of its own called <code>llm-conda</code>. It does not touch the lab venv, and the exercises keep using the venv.</p>
+<div class="callout warn"><p><strong>Anaconda has a licence.</strong> Anaconda's terms now cover universities of TU Dresden's size, and TU Dresden has no central licence. So the script installs only from conda-forge. If in doubt, use the venv.</p></div>
+<x-code lang="bash" title="on an Alpha login node">
+cd ~/behind-llms-lab/hpc_lab/00_setup/conda
+mkdir -p logs && sbatch create_env.sbatch   # once, about 10 to 15 minutes
+cat logs/create-env-*.out                   # the last line should say  OK | CUDA: True
+sbatch job.sbatch                           # runs check_env.py in the environment
+cat logs/conda-job-*.out                    # ends with  ALL GOOD
+</x-code>
+<p>Three things work differently from conda on your laptop:</p>
+<ul>
+  <li><strong>No <code>conda init</code>.</strong> ZIH asks you not to use it. Load the module and source <code>conda.sh</code> instead, in every shell and in every job, as <code>job.sbatch</code> does.</li>
+  <li><strong>The environment lives in a workspace</strong>, given with <code>--prefix</code>, not in <code>~/.conda</code>. Workspaces expire: check with <code>ws_list</code> and extend with <code>ws_extend -F horse llm-conda 30</code>.</li>
+  <li><strong><code>pip</code> needs <code>PIP_REQUIRE_VIRTUALENV=false</code></strong> inside a conda environment, because pip on ZIH systems refuses to run outside a venv.</li>
+</ul>
+<x-code lang="bash" title="add a package to the conda environment">
+srun --account=p_lv_llmsecrets --nodes=1 --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G --gres=gpu:1 --time=00:30:00 --pty bash -l
+module load Anaconda3 && source $EBROOTANACONDA3/etc/profile.d/conda.sh
+conda activate $(ws_find -F horse llm-conda)/env
+PIP_REQUIRE_VIRTUALENV=false pip install --no-cache-dir datasets     # or whatever you need
+exit
+</x-code>
+<x-file path="hpc_lab/00_setup/conda/create_env.sbatch">
+<x-file path="hpc_lab/00_setup/conda/job.sbatch">
+<x-file path="hpc_lab/00_setup/conda/check_env.py">
+
 <h2>Where to run the notebooks</h2>
 <div class="grid three">
   <div class="card c-blue"><p class="eyebrow">the easy way</p><h3>Google Colab</h3><p>Nothing to install. Use the buttons on the <a href="notebooks.html">Notebooks</a> page. For notebooks 5 and 6, choose a T4 GPU under Runtime &gt; Change runtime type.</p></div>
@@ -136,7 +165,7 @@ cat logs/hello-hpc-*.out                    # when the job is gone from the queu
   <li><strong>Send it and watch it.</strong> <code>sbatch</code>, <code>squeue --me</code>, <code>tail -f logs/…</code>. The <a href="cheatsheet.html">cheat sheet</a> has the rest.</li>
 </ol>
 <x-code lang="bash" title="add a package to the lab environment">
-srun --account=p_lv_llmsecrets --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G --time=00:30:00 --pty bash -l
+srun --account=p_lv_llmsecrets --nodes=1 --ntasks=1 --cpus-per-task=4 --mem-per-cpu=2G --gres=gpu:1 --time=00:30:00 --pty bash -l
 source ~/behind-llms-lab/hpc_lab/00_setup/setup_env.sh
 pip install datasets                        # or whatever you need
 exit

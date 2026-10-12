@@ -43,6 +43,7 @@ a notebook. For notebooks 5 and 6, switch to a T4 GPU under Runtime > Change run
 ```
 hpc_lab/
   00_setup/        workspace, modules and a venv in one script
+  00_setup/conda/  the same with conda instead of a venv, if you prefer it
   01_hello/        your first batch job
   02_cancel/       squeue, scontrol, scancel, sacct
   03_gpu/          ask for a GPU and measure it

@@ -10,7 +10,7 @@
 <meta property="og:type" content="website">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="assets/site.css?v=a0add7ec">
+<link rel="stylesheet" href="assets/site.css?v=014c463f">
 <script>(function(){try{if(localStorage.getItem("theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}})()</script>
 </head>
 <body class="page-lab">
@@ -50,7 +50,7 @@ cat<span class="w"> </span>logs/hello-hpc-&lt;jobid&gt;.out<span class="w">     
 <section class="ex" id="ex1">
   <div class="ex-head"><div class="ex-num">1</div><div>
     <h2 id="your-first-batch-job">Your first batch job<a class="anchor" href="#your-first-batch-job" aria-label="Link to this section">#</a></h2>
-    <div class="meta-row"><span>01_hello</span><span>any cluster</span><span>CPU only</span><span>time limit 5 min</span></div>
+    <div class="meta-row"><span>01_hello</span><span>Alpha, or Barnard without <code>--gres</code></span><span>work runs on the CPU</span><span>time limit 5 min</span></div>
   </div></div>
   <div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> Martin submits without a <code>logs</code> folder. The job is gone a second later and there is nothing to read. <a href="story.html#scene-1">See what happened</a></p></div>
   <p><strong>You practise:</strong> your first <code>sbatch</code>, the variables Slurm gives a job, and why <code>--cpus-per-task</code> matters.</p>
@@ -68,23 +68,29 @@ cat<span class="w"> </span>logs/hello-hpc-&lt;jobid&gt;.out</code></pre></figure
   </ul>
   <div class="callout try"><p><strong>Try it.</strong> Options on the command line win over the <code>#SBATCH</code> lines, so you can change the number of cores without editing the file. Compare the speed.</p>
 <figure class="code "><figcaption><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">sbatch<span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">1</span><span class="w"> </span>hello.sbatch
-sbatch<span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">8</span><span class="w"> </span>hello.sbatch</code></pre></figure></div>
+sbatch<span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">6</span><span class="w"> </span>hello.sbatch</code></pre></figure>
+<p>Six is the limit here: on Alpha a job gets at most 6 cores for each GPU it asks for.</p></div>
   <h3>Reading the job script</h3>
   <div class="table-wrap"><table>
     <thead><tr><th>Line</th><th>What it says</th></tr></thead>
     <tbody>
       <tr><td><code>--job-name=hello-hpc</code></td><td>The name you see in <code>squeue</code>.</td></tr>
       <tr><td><code>--account=p_lv_llmsecrets</code></td><td>The project that pays for the computing time.</td></tr>
+      <tr><td><code>--nodes=1</code></td><td>One machine. ZIH wants the number of nodes in every job, so always give this line.</td></tr>
       <tr><td><code>--ntasks=1</code></td><td>One process.</td></tr>
       <tr><td><code>--cpus-per-task=4</code></td><td>With 4 cores.</td></tr>
       <tr><td><code>--mem-per-cpu=1G</code></td><td>1 GB of memory for each core.</td></tr>
+      <tr><td><code>--gres=gpu:1</code></td><td>One GPU. This script does not use it, but Alpha only accepts jobs that ask for one. On Barnard, which has no GPUs, delete this line.</td></tr>
       <tr><td><code>--time=00:05:00</code></td><td>A hard time limit, as hours:minutes:seconds. After that Slurm stops the job.</td></tr>
       <tr><td><code>--output=logs/%x-%j.out</code></td><td>Where the printed text goes. <code>%x</code> is the job name and <code>%j</code> the job ID. The <code>logs</code> folder has to exist before you submit.</td></tr>
       <tr><td><code>srun python3 …</code></td><td>Starts the program inside the job. Everything before it only describes the job.</td></tr>
     </tbody>
   </table></div>
-  <details class="file" open><summary><span class="file-name">hello.sbatch</span><span class="file-meta">33 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/01_hello/hello.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/01_hello/hello.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
-<span class="c1"># Exercise 1: your first batch job (CPU only, works on any cluster)</span>
+  <details class="file" open><summary><span class="file-name">hello.sbatch</span><span class="file-meta">38 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/01_hello/hello.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/01_hello/hello.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+<span class="c1"># Exercise 1: your first batch job (the work itself runs on the CPU)</span>
+<span class="c1">#</span>
+<span class="c1"># Alpha only accepts jobs that ask for a GPU, so this script asks for one even</span>
+<span class="c1"># though it does not use it. On Barnard (no GPUs), delete the --gres line.</span>
 <span class="c1">#</span>
 <span class="c1"># Submit it from a login node:</span>
 <span class="c1">#   mkdir -p logs &amp;&amp; sbatch hello.sbatch</span>
@@ -95,13 +101,15 @@ sbatch<span class="w"> </span>--cpus-per-task<span class="o">=</span><span class
 <span class="c1">#</span>
 <span class="c1"># Then try other core counts without editing this file:</span>
 <span class="c1">#   sbatch --cpus-per-task=1 hello.sbatch</span>
-<span class="c1">#   sbatch --cpus-per-task=8 hello.sbatch</span>
+<span class="c1">#   sbatch --cpus-per-task=6 hello.sbatch   (6 cores per GPU is the most Alpha allows)</span>
 <span class="c1">#</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">hello-hpc</span>          <span class="c1"># the name you see in squeue</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_lv_llmsecrets</span>      <span class="c1"># our course project, it pays for the CPU time</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--nodes</span>=<span class="sbv">1</span>                     <span class="c1"># one machine (ZIH wants this line in every job)</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>                    <span class="c1"># one process</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">4</span>             <span class="c1"># with 4 cores</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--mem-per-cpu</span>=<span class="sbv">1G</span>              <span class="c1"># memory per core</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--gres</span>=<span class="sbv">gpu:1</span>                  <span class="c1"># Alpha takes only GPU jobs; on Barnard delete this line</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--time</span>=<span class="sbv">00:05:00</span>               <span class="c1"># hard time limit, hh:mm:ss</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--output</span>=<span class="sbv">logs/%x-%j.out</span>       <span class="c1"># %x is the job name, %j the job ID</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--error</span>=<span class="sbv">logs/%x-%j.err</span>        <span class="c1"># the logs folder has to exist before you submit</span>
@@ -200,7 +208,7 @@ srun<span class="w"> </span>python3<span class="w"> </span>hello_hpc.py<span cla
 <section class="ex" id="ex2">
   <div class="ex-head"><div class="ex-num">2</div><div>
     <h2 id="watch-a-job-then-cancel-it">Watch a job, then cancel it<a class="anchor" href="#watch-a-job-then-cancel-it" aria-label="Link to this section">#</a></h2>
-    <div class="meta-row"><span>02_cancel</span><span>any cluster</span><span>CPU only</span><span>time limit 10 min</span></div>
+    <div class="meta-row"><span>02_cancel</span><span>Alpha, or Barnard without <code>--gres</code></span><span>work runs on the CPU</span><span>time limit 10 min</span></div>
   </div></div>
   <div class="story-strip"><span class="duo"><i class="avatar"></i><i class="avatar b"></i></span><p><strong>Marie and Martin.</strong> Marie sees <code>PD</code>, decides the job is broken and submits it three times. Martin tries to stop a job with Ctrl+C. <a href="story.html#scene-2">See what happened</a></p></div>
   <p><strong>You practise:</strong> <code>squeue</code>, <code>scontrol</code>, <code>scancel</code>, <code>sacct</code>, and saving your work when the job is stopped.</p>
@@ -223,8 +231,11 @@ sacct<span class="w"> </span>-j<span class="w"> </span>&lt;jobid&gt;<span class=
 <figure class="code "><figcaption><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">sbatch<span class="w"> </span>--begin<span class="o">=</span>now+5minutes<span class="w"> </span>sleepy.sbatch
 squeue<span class="w"> </span>--me<span class="w">                          </span><span class="c1"># the REASON column says (BeginTime)</span>
 whypending<span class="w"> </span>&lt;jobid&gt;</code></pre></figure></div>
-  <details class="file" open><summary><span class="file-name">sleepy.sbatch</span><span class="file-meta">27 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/02_cancel/sleepy.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/02_cancel/sleepy.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+  <details class="file" open><summary><span class="file-name">sleepy.sbatch</span><span class="file-meta">32 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/02_cancel/sleepy.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/02_cancel/sleepy.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
 <span class="c1"># Exercise 2: watch a job, then cancel it</span>
+<span class="c1">#</span>
+<span class="c1"># Alpha only accepts jobs that ask for a GPU, so this script asks for one even</span>
+<span class="c1"># though it does not use it. On Barnard (no GPUs), delete the --gres line.</span>
 <span class="c1">#</span>
 <span class="c1">#   mkdir -p logs</span>
 <span class="c1">#   sbatch sleepy.sbatch                 # prints &quot;Submitted batch job &lt;jobid&gt;&quot;</span>
@@ -241,9 +252,11 @@ whypending<span class="w"> </span>&lt;jobid&gt;</code></pre></figure></div>
 <span class="c1">#</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">sleepy</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_lv_llmsecrets</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--nodes</span>=<span class="sbv">1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--mem-per-cpu</span>=<span class="sbv">500M</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--gres</span>=<span class="sbv">gpu:1</span>                  <span class="c1"># Alpha takes only GPU jobs</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--time</span>=<span class="sbv">00:10:00</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--output</span>=<span class="sbv">logs/%x-%j.out</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--error</span>=<span class="sbv">logs/%x-%j.err</span>
@@ -327,7 +340,7 @@ cat<span class="w"> </span>logs/gpu-check-&lt;jobid&gt;.out</code></pre></figure
   </ul>
   <div class="callout warn"><p><strong>The line that gets you a GPU</strong> is <code>#SBATCH --gres=gpu:1</code>. Without it the job still runs on a GPU cluster, but the script prints <em>No GPU found</em>. And every cluster has its own Slurm, so a job sent from Barnard never gets a GPU.</p></div>
   <div class="callout try"><p><strong>Try it.</strong> Everything in the last line of the job script can be changed. Make the matrices smaller or bigger with <code>--n</code> and see when the GPU stops being worth it.</p></div>
-  <details class="file" open><summary><span class="file-name">gpu.sbatch</span><span class="file-meta">28 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/03_gpu/gpu.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/03_gpu/gpu.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+  <details class="file" open><summary><span class="file-name">gpu.sbatch</span><span class="file-meta">29 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/03_gpu/gpu.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/03_gpu/gpu.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
 <span class="c1"># Exercise 3: ask for one GPU and see how fast it is</span>
 <span class="c1">#</span>
 <span class="c1"># Submit it from a login node of a GPU cluster:</span>
@@ -339,6 +352,7 @@ cat<span class="w"> </span>logs/gpu-check-&lt;jobid&gt;.out</code></pre></figure
 <span class="c1">#</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">gpu-check</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_lv_llmsecrets</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--nodes</span>=<span class="sbv">1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">6</span>             <span class="c1"># CPU cores that come with the GPU</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--gres</span>=<span class="sbv">gpu:1</span>                  <span class="c1"># this is the line that gets you a GPU</span>
@@ -469,7 +483,7 @@ sbatch<span class="w"> </span>train.sbatch<span class="w"> </span>--n-layer<span
       <tr><td><code>--device</code></td><td>auto</td><td><code>auto</code>, <code>cpu</code> or <code>cuda</code>. With <code>auto</code> it uses the GPU if Slurm gave you one.</td></tr>
     </tbody>
   </table></div>
-  <details class="file" open><summary><span class="file-name">train.sbatch</span><span class="file-meta">34 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/04_tinygpt/train.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/04_tinygpt/train.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+  <details class="file" open><summary><span class="file-name">train.sbatch</span><span class="file-meta">35 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/04_tinygpt/train.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/04_tinygpt/train.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
 <span class="c1"># Exercise 4: train a tiny GPT on one GPU</span>
 <span class="c1">#</span>
 <span class="c1">#   cd 04_tinygpt &amp;&amp; mkdir -p logs &amp;&amp; sbatch train.sbatch</span>
@@ -486,6 +500,7 @@ sbatch<span class="w"> </span>train.sbatch<span class="w"> </span>--n-layer<span
 <span class="c1">#</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">tinygpt</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_lv_llmsecrets</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--nodes</span>=<span class="sbv">1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">6</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--gres</span>=<span class="sbv">gpu:1</span>
@@ -824,7 +839,7 @@ best: lr-…  (val loss …)</code></pre></figure>
 <span class="nb">echo</span>
 <span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;watch with:  squeue --me&quot;</span>
 <span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;results in:  logs/lr-collect-</span><span class="nv">$COLLECT_ID</span><span class="s2">.out&quot;</span></code></pre></figure></details>
-  <details class="file" open><summary><span class="file-name">sweep.sbatch</span><span class="file-meta">33 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/05_sweep/sweep.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/05_sweep/sweep.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+  <details class="file" open><summary><span class="file-name">sweep.sbatch</span><span class="file-meta">34 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/05_sweep/sweep.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/05_sweep/sweep.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
 <span class="c1"># Exercise 5: a learning-rate sweep as a job array</span>
 <span class="c1">#</span>
 <span class="c1">#   cd 05_sweep &amp;&amp; mkdir -p logs &amp;&amp; ./submit_sweep.sh     (sends the sweep and the summary job)</span>
@@ -837,6 +852,7 @@ best: lr-…  (val loss …)</code></pre></figure>
 <span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">lr-sweep</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_lv_llmsecrets</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--array</span>=<span class="sbv">0-3</span>                   <span class="c1"># 4 tasks; with 0-3%2 at most 2 run at the same time</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--nodes</span>=<span class="sbv">1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">6</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--gres</span>=<span class="sbv">gpu:1</span>                  <span class="c1"># every task gets its own GPU</span>
@@ -857,16 +873,19 @@ srun<span class="w"> </span>python<span class="w"> </span>-u<span class="w"> </s
 <span class="w">    </span>--out<span class="w">  </span><span class="s2">&quot;</span><span class="nv">$WS_DIR</span><span class="s2">/runs/sweep-</span><span class="nv">$SLURM_ARRAY_JOB_ID</span><span class="s2">/lr-</span><span class="nv">$LR</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--steps<span class="w"> </span><span class="m">2000</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--lr<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$LR</span><span class="s2">&quot;</span></code></pre></figure></details>
-  <details class="file"><summary><span class="file-name">collect.sbatch</span><span class="file-meta">16 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/05_sweep/collect.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/05_sweep/collect.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+  <details class="file"><summary><span class="file-name">collect.sbatch</span><span class="file-meta">19 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/05_sweep/collect.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/05_sweep/collect.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
 <span class="c1"># Exercise 5: a tiny CPU job that prints the sweep results.</span>
 <span class="c1"># submit_sweep.sh sends it with --dependency=afterok:&lt;array job id&gt;,</span>
 <span class="c1"># so it only starts after all array tasks have finished without errors.</span>
+<span class="c1"># It asks for a GPU only because Alpha accepts nothing else.</span>
 <span class="c1">#</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">lr-collect</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_lv_llmsecrets</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--nodes</span>=<span class="sbv">1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--mem-per-cpu</span>=<span class="sbv">1G</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--gres</span>=<span class="sbv">gpu:1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--time</span>=<span class="sbv">00:05:00</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--output</span>=<span class="sbv">logs/%x-%j.out</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--error</span>=<span class="sbv">logs/%x-%j.err</span>
@@ -935,7 +954,7 @@ cat<span class="w"> </span>logs/hf-generate-&lt;jobid&gt;.out</code></pre></figu
 <figure class="code "><figcaption><span class="code-lang">shell</span><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl">python<span class="w"> </span>generate.py<span class="w"> </span>--download-only<span class="w"> </span>--model<span class="w"> </span>gpt2
 sbatch<span class="w"> </span>generate.sbatch<span class="w"> </span>--model<span class="w"> </span>gpt2</code></pre></figure>
   <p>GPT-2 only knows English and has no chat format, so it simply continues your text. For CPU against GPU, copy the job script, remove the <code>--gres</code> line and ask for more CPU cores.</p></div>
-  <details class="file" open><summary><span class="file-name">generate.sbatch</span><span class="file-meta">27 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/06_hf_generate/generate.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/06_hf_generate/generate.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
+  <details class="file" open><summary><span class="file-name">generate.sbatch</span><span class="file-meta">28 lines</span></summary><figure class="code "><figcaption><span class="code-title">hpc_lab/06_hf_generate/generate.sbatch</span><span class="code-lang">slurm job script</span><a class="code-link" href="https://github.com/himanshubeniwal/behind-llms-lab/blob/main/hpc_lab/06_hf_generate/generate.sbatch">GitHub</a><button class="copy" type="button" aria-label="Copy the code">Copy</button></figcaption><pre tabindex="0"><code class="hl"><span class="ch">#!/bin/bash</span>
 <span class="c1"># Exercise 6: let a pretrained language model answer a file of prompts</span>
 <span class="c1">#</span>
 <span class="c1">#   source ../00_setup/setup_env.sh</span>
@@ -949,6 +968,7 @@ sbatch<span class="w"> </span>generate.sbatch<span class="w"> </span>--model<spa
 <span class="c1">#</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--job-name</span>=<span class="sbv">hf-generate</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--account</span>=<span class="sbv">p_lv_llmsecrets</span>
+<span class="sbd">#SBATCH</span> <span class="sbk">--nodes</span>=<span class="sbv">1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--ntasks</span>=<span class="sbv">1</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--cpus-per-task</span>=<span class="sbv">6</span>
 <span class="sbd">#SBATCH</span> <span class="sbk">--gres</span>=<span class="sbv">gpu:1</span>
@@ -1088,6 +1108,6 @@ List three risks of large language models.</code></pre></figure></details>
     </div>
   </div>
 </footer>
-<script src="assets/site.js?v=a0add7ec" defer></script>
+<script src="assets/site.js?v=014c463f" defer></script>
 </body>
 </html>

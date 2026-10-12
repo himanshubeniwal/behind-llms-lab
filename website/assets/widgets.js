@@ -282,8 +282,8 @@
   // ------------------------------------------------------------------ 5. write a job script
   function sbatch(root) {
     var CLUSTERS = {
-      alpha: { name: "Alpha Centauri (A100)", host: "login1.alpha.hpc.tu-dresden.de", gpus: 8 },
-      capella: { name: "Capella (H100)", host: "login1.capella.hpc.tu-dresden.de", gpus: 4 },
+      alpha: { name: "Alpha Centauri (A100)", host: "login1.alpha.hpc.tu-dresden.de", gpus: 8, cpg: 6, gpuOnly: true },
+      capella: { name: "Capella (H100)", host: "login1.capella.hpc.tu-dresden.de", gpus: 4, cpg: 14 },
       barnard: { name: "Barnard (CPU only)", host: "login1.barnard.hpc.tu-dresden.de", gpus: 0 }
     };
     function field(label, input, wide) { return el("label", { class: "field" + (wide ? " wide" : "") }, [label, input]); }
@@ -309,6 +309,7 @@
       lines.push("#SBATCH --job-name=" + name);
       lines.push("#SBATCH --account=" + safe(f.account.value.trim(), /^[\w-]{1,60}$/, "p_lv_llmsecrets"));
       if (array) lines.push("#SBATCH --array=" + array);
+      lines.push("#SBATCH --nodes=1");
       lines.push("#SBATCH --ntasks=1");
       lines.push("#SBATCH --cpus-per-task=" + Math.max(1, parseInt(f.cpus.value, 10) || 1));
       if (gpus > 0) lines.push("#SBATCH --gres=gpu:" + gpus);
@@ -326,6 +327,9 @@
       var w = [];
       if (gpus > 0 && c.gpus === 0) w.push("Barnard has no GPUs. Send GPU jobs from an Alpha or Capella login node.");
       else if (gpus > c.gpus) w.push("One node of this cluster has " + c.gpus + " GPUs. Ask for at most that many.");
+      if (gpus === 0 && c.gpuOnly) w.push("Alpha only accepts jobs that ask for a GPU. Ask for 1, or send CPU-only jobs from Barnard.");
+      var cpus = Math.max(1, parseInt(f.cpus.value, 10) || 1);
+      if (gpus > 0 && c.cpg && cpus > c.cpg * gpus) w.push("This cluster gives at most " + c.cpg + " CPU cores per GPU, so ask for at most " + (c.cpg * gpus) + ".");
       if (!/^(\d+-)?\d{1,2}:\d{2}:\d{2}$/.test(f.time.value.trim())) w.push("Write the time limit as hh:mm:ss, for example 01:30:00.");
       if (array && !/^[\d,\-:%]+$/.test(array)) w.push("An array looks like 0-3, 1,4,7 or 0-9%2.");
       if (array && !/SLURM_ARRAY_TASK_ID/.test(f.cmd.value)) w.push("With an array, use $SLURM_ARRAY_TASK_ID in your command so the tasks do different things.");
